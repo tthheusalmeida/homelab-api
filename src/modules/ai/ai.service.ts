@@ -15,7 +15,7 @@ export class AIService {
     return this.provider.health();
   }
 
-  async chat(message: string, model: string): Promise<string> {
-    return this.provider.chat(message, model);
+  async chat(message: string, model: string, think: boolean): Promise<string> {
+    return this.provider.chat(message, model, think);
   }
 }
