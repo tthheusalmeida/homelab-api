@@ -1,11 +1,11 @@
-export const HealthStatusType = {
+export const HealthStatusOptions = {
   OK: 'ok',
   ERROR: 'error',
 } as const;
 
 // HealthStatusType = 'ok' | 'error'
 export type HealthStatusType =
-  (typeof HealthStatusType)[keyof typeof HealthStatusType];
+  (typeof HealthStatusOptions)[keyof typeof HealthStatusOptions];
 
 export interface HealthStatus {
   status: HealthStatusType;

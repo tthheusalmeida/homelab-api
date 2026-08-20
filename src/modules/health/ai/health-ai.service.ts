@@ -1,27 +1,31 @@
 import { Injectable } from '@nestjs/common';
-import { HealthCheck, HealthStatus, HealthStatusType } from '../health.model';
+import {
+  HealthCheck,
+  HealthStatus,
+  HealthStatusOptions,
+} from '../health.model';
+import { AIService } from 'src/modules/ai/ai.service';
 
 @Injectable()
 export class HealthAIService implements HealthCheck {
+  constructor(private readonly aiService: AIService) {}
+
   async check(): Promise<HealthStatus> {
     try {
-      const response = await fetch('http://localhost:11434/api/tags');
+      const response = await this.aiService.health();
 
-      if (!response.ok) {
+      if (response.status !== HealthStatusOptions.OK) {
         return {
-          status: HealthStatusType.ERROR,
-          service: 'ollama',
+          status: HealthStatusOptions.ERROR,
+          service: 'unknown',
         };
       }
 
-      return {
-        status: HealthStatusType.OK,
-        service: 'ollama',
-      };
+      return response;
     } catch {
       return {
-        status: HealthStatusType.ERROR,
-        service: 'ollama',
+        status: HealthStatusOptions.ERROR,
+        service: 'unknown',
       };
     }
   }
