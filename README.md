@@ -1,16 +1,11 @@
 <p align="center">
   <a href="" target="_blank">
-    <!-- <img src="" width="120" alt="Sasae" /> -->
+    <!-- <img src="" width="120" alt="AI API" /> -->
   </a>
 </p>
 
 <p align="center">
-  <b>Sasae (支え)</b> é uma palavra japonesa que significa
-  <b><i>suporte</i></b>, <b><i>sustentação</i></b> ou
-  <b><i>aquilo que dá apoio</i></b>.
-
-O nome também foi escolhido por ser curto, fácil de pronunciar e ter um
-significado que representa diretamente a função do projeto: <b><i>me dar suporte</i></b>.
+  <b>AI API</b> é uma interface de programação de aplicações voltada para executar processos que envolvam inteligência artificial.
 
 </p>
 
