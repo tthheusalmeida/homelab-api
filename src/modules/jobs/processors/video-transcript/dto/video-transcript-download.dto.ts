@@ -1,0 +1,9 @@
+import { ApiProperty } from '@nestjs/swagger';
+
+export class VideoTranscriptDownloadDto {
+  @ApiProperty({
+    example:
+      'https://nv.instructuremedia.com/drm/eyJhbGciOiJFUzUxMiJ9.eyJhdWQiOiJEcm06OkNvbnRlbnRDb250cm9sbGVyIiwicGF0aCI6Im9yaWdpbmFscy9vLTMzQW5CUXZvMUViZG1qMldadG5ROXhiQTlGS1U2ajMvdHJhbnNjb2RpbmdzL3QtZktOZUFMQnNGeHBia1NQSmczR1A0N21EVGtxcUFUWS5tcDQiLCJleHAiOjE3ODc3NzU5MDgsIm1ldGFkYXRhIjp7ImNhcHRpb25zIjpbeyJpZCI6ImMtM0wxVjJCYXF3dEJpZUhhTHNUamdhZ0dtck1RanNzQVIiLCJsYW5ndWFnZSI6InB0IiwiYXNyIjp0cnVlfV19fQ.AWjrLBabs8sCnqcXqONIBEc0BOswqcq_ivlMDNpkIrz0vEuPEbIndKWZLrzujZPNvGYXMWjEs7G8oDZGSaQ3VxmIAV0ouHMNwCGi38Dzk5IdVbAwU_Y5VOoPxv57tToGLfZ1ZBzoIswdBqn1xlBfl7u5gQmQfO4Izof6ZdpsQhqviEmE.mp4',
+  })
+  url!: string;
+}
