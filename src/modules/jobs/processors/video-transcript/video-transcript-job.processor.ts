@@ -15,7 +15,7 @@ export class VideoTranscriptJobProcessor implements JobProcessor<
   async process(job: Job, videoUrl: string): Promise<string> {
     console.log(`[${job.id}] Baixando video...`);
 
-    await this.download(videoUrl);
+    await this.videoService.download(videoUrl, `${job.id}.mp4`);
 
     // const audioPath = await this.download(videoUrl);
 
@@ -30,10 +30,6 @@ export class VideoTranscriptJobProcessor implements JobProcessor<
     // return markdown;
 
     return `Baixou ['id': ${job.id}, 'status': ${job.status}`;
-  }
-
-  private async download(url: string): Promise<void> {
-    await this.videoService.download(url);
   }
 
   // private async transcribe(audioPath: string): Promise<string> {

@@ -9,8 +9,8 @@ import * as path from 'node:path';
 export class VideoService {
   async download(
     url: string,
-    destinationDir: string = 'D:/homelab/video',
     fileName: string = 'video-baixado.mp4',
+    destinationDir: string = 'D:/homelab/temp/video',
   ): Promise<string> {
     // path.resolve lida automaticamente com diferenças de sistema operacional
     const outputPath = path.resolve(destinationDir, fileName);
@@ -24,7 +24,6 @@ export class VideoService {
       // Remove o arquivo parcialmente baixado quando ocorre algum erro.
       const cleanup = () => {
         fileStream.close();
-
         fs.unlink(outputPath, () => {});
       };
 
@@ -43,7 +42,7 @@ export class VideoService {
           // Libera o response atual porque ele não contém o vídeo.
           response.resume();
 
-          this.download(response.headers.location, destinationDir, fileName)
+          this.download(response.headers.location, fileName, destinationDir)
             .then(resolve)
             .catch(reject);
 
