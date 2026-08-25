@@ -1,10 +1,12 @@
+import { ApiBody } from '@nestjs/swagger';
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 
+import { Job } from './domain/job.entity';
 import { JobService } from './application/job.service';
 import { JobRunner } from './application/job-runner.service';
-import { VideoTranscriptJobProcessor } from './processors/video-transcript/video-transcript-job.processor';
-import { ApiBody } from '@nestjs/swagger';
+
 import { VideoTranscriptDownloadDto } from './processors/video-transcript/dto/video-transcript-download.dto';
+import { VideoTranscriptJobProcessor } from './processors/video-transcript/video-transcript-job.processor';
 
 @Controller('jobs')
 export class JobController {
@@ -25,6 +27,11 @@ export class JobController {
       id: job.id,
       status: job.status,
     };
+  }
+
+  @Get()
+  findAll(): Job[] {
+    return this.jobs.findAll();
   }
 
   @Get(':id')

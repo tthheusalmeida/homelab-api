@@ -23,9 +23,13 @@ export class JobService {
     const job = this.repository.findById(id);
 
     if (!job) {
-      throw new NotFoundException(`Job ${id} não encontrado`);
+      throw new NotFoundException(`Job "${id}" não encontrado`);
     }
 
     return job;
+  }
+
+  findAll(): Job[] {
+    return this.repository.findAll();
   }
 }

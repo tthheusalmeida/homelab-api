@@ -6,4 +6,6 @@ export interface JobRepository {
   save(job: Job): void;
 
   findById(id: string): Job | null;
+
+  findAll(): Job[];
 }

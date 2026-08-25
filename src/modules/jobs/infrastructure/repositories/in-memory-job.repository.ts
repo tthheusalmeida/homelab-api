@@ -14,4 +14,8 @@ export class InMemoryJobRepository implements JobRepository {
   findById(id: string): Job | null {
     return this.jobs.get(id) ?? null;
   }
+
+  findAll(): Job[] {
+    return [...this.jobs.values()];
+  }
 }
