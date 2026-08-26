@@ -4,6 +4,10 @@ import * as http from 'node:http';
 import * as https from 'node:https';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const execFileAsync = promisify(execFile);
 
 @Injectable()
 export class VideoService {
@@ -64,9 +68,6 @@ export class VideoService {
 
         fileStream.on('finish', () => {
           fileStream.close();
-
-          console.log(`Download concluído! Salvo em: ${outputPath}`);
-
           resolve(outputPath);
         });
 
@@ -91,5 +92,42 @@ export class VideoService {
         );
       });
     });
+  }
+
+  async toAudio(
+    videoPath: string,
+    destinationDir: string = 'D:/homelab/temp/audio',
+  ): Promise<string> {
+    fs.mkdirSync(destinationDir, { recursive: true });
+
+    const videoFileName = path.basename(videoPath);
+    const videoName = path.parse(videoFileName).name;
+
+    const audioFileName = `${videoName}.wav`;
+    const audioPath = path.resolve(destinationDir, audioFileName);
+
+    await execFileAsync('ffmpeg', [
+      '-i',
+      videoPath,
+      // Remove o vídeo
+      '-vn',
+      // Áudio mono
+      '-ac',
+      '1',
+      // 16 kHz, ideal para speech-to-text
+      '-ar',
+      '16000',
+      // WAV PCM
+      '-c:a',
+      'pcm_s16le',
+
+      audioPath,
+    ]);
+
+    return audioPath;
+  }
+
+  async deleteVideo(videoPath: string): Promise<void> {
+    await fs.promises.unlink(videoPath);
   }
 }

@@ -13,11 +13,20 @@ export class VideoTranscriptJobProcessor implements JobProcessor<
   constructor(private readonly videoService: VideoService) {}
 
   async process(job: Job, videoUrl: string): Promise<string> {
-    console.log(`[${job.id}] Baixando video...`);
+    console.log(`[${job.id}] ⬇️  Baixando video...`);
+    const videoPath = await this.videoService.download(
+      videoUrl,
+      `${job.id}.mp4`,
+    );
+    console.log(`[${job.id}] ✅ Video adquirido!`);
 
-    await this.videoService.download(videoUrl, `${job.id}.mp4`);
+    console.log(`[${job.id}] 🎙️ Convertendo: Vídeo -> Áudio...`);
+    await this.videoService.toAudio(videoPath);
+    console.log(`[${job.id}] ✅ Áudio adquirido!`);
 
-    // const audioPath = await this.download(videoUrl);
+    console.log(`[${job.id}] ♻️ Deletando vídeo...`);
+    await this.videoService.deleteVideo(videoPath);
+    console.log(`[${job.id}] ❌ Vídeo deletado!`);
 
     // console.log(`[${job.id}] Transcrevendo...`);
 

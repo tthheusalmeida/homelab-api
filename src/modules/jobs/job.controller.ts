@@ -16,6 +16,16 @@ export class JobController {
     private readonly videoProcessor: VideoTranscriptJobProcessor,
   ) {}
 
+  @Get()
+  findAll(): Job[] {
+    return this.jobs.findAll();
+  }
+
+  @Get(':id')
+  find(@Param('id') id: string) {
+    return this.jobs.findById(id);
+  }
+
   @ApiBody({ type: VideoTranscriptDownloadDto })
   @Post('video-transcript')
   async createVideoTranscript(@Body('url') url: string) {
@@ -27,15 +37,5 @@ export class JobController {
       id: job.id,
       status: job.status,
     };
-  }
-
-  @Get()
-  findAll(): Job[] {
-    return this.jobs.findAll();
-  }
-
-  @Get(':id')
-  find(@Param('id') id: string) {
-    return this.jobs.findById(id);
   }
 }
