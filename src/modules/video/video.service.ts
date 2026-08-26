@@ -127,7 +127,24 @@ export class VideoService {
     return audioPath;
   }
 
+  async saveTranscription(
+    transcription: string,
+    fileName: string = 'transcription.txt',
+    destinationDir: string = 'D:/homelab/temp/txt',
+  ): Promise<string> {
+    fs.mkdirSync(destinationDir, { recursive: true });
+
+    const outputPath = path.resolve(destinationDir, fileName);
+    await fs.promises.writeFile(outputPath, transcription, 'utf-8');
+
+    return outputPath;
+  }
+
   async deleteVideo(videoPath: string): Promise<void> {
     await fs.promises.unlink(videoPath);
+  }
+
+  async deleteAudio(audioPath: string): Promise<void> {
+    await fs.promises.unlink(audioPath);
   }
 }

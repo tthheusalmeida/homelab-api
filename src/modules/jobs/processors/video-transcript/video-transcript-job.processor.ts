@@ -4,33 +4,28 @@ import { Job } from '../../domain/job.entity';
 import { JobProcessor } from '../../domain/job-processor.interface';
 
 import { VideoService } from 'src/modules/video/video.service';
+import { WhisperService } from 'src/modules/ai/whisper/whisper.service';
+import { normalizeText } from 'src/utils/text.utils';
 
 @Injectable()
 export class VideoTranscriptJobProcessor implements JobProcessor<
   string,
   string
 > {
-  constructor(private readonly videoService: VideoService) {}
+  constructor(
+    private readonly videoService: VideoService,
+    private readonly whisperService: WhisperService,
+  ) {}
 
   async process(job: Job, videoUrl: string): Promise<string> {
-    console.log(`[${job.id}] ⬇️  Baixando video...`);
-    const videoPath = await this.videoService.download(
-      videoUrl,
-      `${job.id}.mp4`,
-    );
-    console.log(`[${job.id}] ✅ Video adquirido!`);
+    const videoPath = await this.downloadVideo(job, videoUrl);
+    const audioPath = await this.convertToAudio(job, videoPath);
+    await this.deleteVideo(job, videoPath);
 
-    console.log(`[${job.id}] 🎙️ Convertendo: Vídeo -> Áudio...`);
-    await this.videoService.toAudio(videoPath);
-    console.log(`[${job.id}] ✅ Áudio adquirido!`);
-
-    console.log(`[${job.id}] ♻️ Deletando vídeo...`);
-    await this.videoService.deleteVideo(videoPath);
-    console.log(`[${job.id}] ❌ Vídeo deletado!`);
-
-    // console.log(`[${job.id}] Transcrevendo...`);
-
-    // const transcript = await this.transcribe(audioPath);
+    const rawTranscription = await this.transcribe(job, audioPath);
+    const transcription = normalizeText(rawTranscription);
+    await this.saveTranscription(job, transcription, `${job.id}.txt`);
+    await this.deleteAudio(job, audioPath);
 
     // console.log(`[${job.id}] Gerando texto...`);
 
@@ -41,13 +36,56 @@ export class VideoTranscriptJobProcessor implements JobProcessor<
     return `Baixou ['id': ${job.id}, 'status': ${job.status}`;
   }
 
-  // private async transcribe(audioPath: string): Promise<string> {
-  //   // Whisper
-  //   return 'transcription...';
-  // }
+  private async downloadVideo(job: Job, videoUrl: string): Promise<string> {
+    console.log(`[${job.id}] ⬇️ Baixando video...`);
+    const videoPath = await this.videoService.download(
+      videoUrl,
+      `${job.id}.mp4`,
+    );
+    console.log(`[${job.id}] ✅ Video adquirido!`);
 
-  // private async generateMarkdown(transcript: string): Promise<string> {
-  //   // Ollama + Markdown writer
-  //   return '# Knowledge';
-  // }
+    return videoPath;
+  }
+
+  private async convertToAudio(job: Job, videoPath: string): Promise<string> {
+    console.log(`[${job.id}] 🎙️ Convertendo: Vídeo -> Áudio...`);
+    const audioPath = await this.videoService.toAudio(videoPath);
+    console.log(`[${job.id}] ✅ Áudio adquirido!`);
+
+    return audioPath;
+  }
+
+  private async deleteVideo(job: Job, videoPath: string): Promise<void> {
+    console.log(`[${job.id}] ♻️ Deletando vídeo...`);
+    await this.videoService.deleteVideo(videoPath);
+    console.log(`[${job.id}] ❌ Vídeo deletado!`);
+  }
+
+  private async transcribe(job: Job, audioPath: string): Promise<string> {
+    console.log(`[${job.id}] 📝 Transcrevendo...`);
+    const transcription = await this.whisperService.transcribe(audioPath);
+    console.log(`[${job.id}] ✅ Transcrição completa!`);
+
+    return transcription;
+  }
+
+  private async saveTranscription(
+    job: Job,
+    transcription: string,
+    fileName: string,
+  ): Promise<string> {
+    console.log(`[${job.id}] 💾 Salvando transcrição...`);
+    const transcriptionPath = await this.videoService.saveTranscription(
+      transcription,
+      fileName,
+    );
+    console.log(`[${job.id}] ✅ Transcrição salva!`);
+    return transcriptionPath;
+  }
+
+  private async deleteAudio(job: Job, audioPath: string): Promise<void> {
+    console.log(`[${job.id}] ♻️ Deletando áudio...`);
+    await this.videoService.deleteAudio(audioPath);
+    console.log(`[${job.id}] ❌ Áudio deletado!`);
+  }
 }

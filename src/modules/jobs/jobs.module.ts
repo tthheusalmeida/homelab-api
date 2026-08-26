@@ -7,11 +7,12 @@ import { JobRunner } from './application/job-runner.service';
 import { InMemoryJobRepository } from './infrastructure/repositories/in-memory-job.repository';
 import { JOB_REPOSITORY } from './infrastructure/repositories/job.repository';
 
+import { AIModule } from '../ai/ai.module';
 import { VideoModule } from '../video/video.module';
 import { VideoTranscriptJobProcessor } from './processors/video-transcript/video-transcript-job.processor';
 
 @Module({
-  imports: [VideoModule],
+  imports: [VideoModule, AIModule],
   controllers: [JobController],
 
   providers: [
