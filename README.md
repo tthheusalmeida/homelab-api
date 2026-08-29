@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <b>AI API</b> é uma interface de programação de aplicações voltada para executar processos que envolvam inteligência artificial.
+  <b>HomeLab API</b> é uma interface de programação de aplicações voltada para executar processos do HomeLab.
 
 </p>
 
