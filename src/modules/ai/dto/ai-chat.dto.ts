@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
+import type { AIProviderName } from '../ai.model';
 
-export class ChatRequestDto {
+export class AiChatDto {
   @ApiProperty({
     example: 'Olá, tudo bem?',
   })
@@ -9,11 +10,16 @@ export class ChatRequestDto {
   @ApiProperty({
     example: 'qwen3:1.7b',
   })
-  model!: string;
+  modelId!: string;
 
   @ApiProperty({
-    example: false,
+    example: 'ollama',
+  })
+  providerId!: AIProviderName;
+
+  @ApiProperty({
+    example: 'off',
     required: false,
   })
-  think?: boolean;
+  thinking?: string;
 }

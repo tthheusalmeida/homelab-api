@@ -2,7 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 
-import type { AIProvider, AIProviderModel } from '../ai.model';
+import type {
+  AIChatRequest,
+  AIProvider,
+  AIProviderModel,
+  AIThinkingOption,
+} from '../ai.model';
 
 import { hasProperty, isObject, isString } from 'src/utils/type-guards';
 
@@ -55,6 +60,7 @@ function parseOllamaModelsResponse(data: unknown): AIProviderModel[] {
 
     return {
       name: item.name,
+      provider: 'ollama',
       model: item.model,
       size: item.size,
       details: {
@@ -78,6 +84,7 @@ function parseOllamaModelsResponse(data: unknown): AIProviderModel[] {
 
 @Injectable()
 export class OllamaProvider implements AIProvider {
+  readonly name = 'ollama' as const;
   private readonly baseUrl = 'http://localhost:11434';
 
   constructor(private readonly httpService: HttpService) {}
@@ -98,17 +105,18 @@ export class OllamaProvider implements AIProvider {
     }
   }
 
-  async chat(message: string, model: string): Promise<string> {
+  async chat(request: AIChatRequest): Promise<string> {
     try {
       const response = await firstValueFrom(
         this.httpService.post(`${this.baseUrl}/api/chat`, {
-          model,
+          model: request.model,
           messages: [
             {
               role: 'user',
-              content: message,
+              content: request.message,
             },
           ],
+          think: request.thinking === 'on',
           stream: false,
         }),
       );
@@ -132,6 +140,50 @@ export class OllamaProvider implements AIProvider {
       throw new Error('A requisição para listar modelos do Ollama falhou.', {
         cause: error,
       });
+    }
+  }
+
+  async thinking(model: string): Promise<AIThinkingOption[]> {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(`${this.baseUrl}/api/show`, {
+          name: model,
+        }),
+      );
+
+      const data: unknown = response.data;
+
+      if (
+        !isObject(data) ||
+        !hasProperty(data, 'capabilities') ||
+        !Array.isArray(data.capabilities)
+      ) {
+        return [];
+      }
+
+      const capabilities = data.capabilities.map(String);
+
+      if (!capabilities.includes('thinking')) {
+        return [];
+      }
+
+      return [
+        {
+          id: 'off',
+          label: 'Desativado',
+        },
+        {
+          id: 'on',
+          label: 'Ativado',
+        },
+      ];
+    } catch (error) {
+      throw new Error(
+        `Não foi possível consultar as capacidades do modelo ${model} no Ollama.`,
+        {
+          cause: error,
+        },
+      );
     }
   }
 }

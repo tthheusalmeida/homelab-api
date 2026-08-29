@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 
 import { HealthSystemModule } from './modules/health/system/health-system.module';
 import { HealthAIModule } from './modules/health/ai/health-ai.module';
@@ -9,6 +10,8 @@ import { JobsModule } from './modules/jobs/jobs.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot(),
+
     //health
     HealthSystemModule,
     HealthAIModule,

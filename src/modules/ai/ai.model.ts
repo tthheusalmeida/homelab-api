@@ -1,10 +1,20 @@
 import { HealthStatus } from '../health/health.model';
 
-export const AI_PROVIDER = Symbol('AI_PROVIDER');
+export type AIProviderName = 'ollama' | 'gemini';
+
+export interface AIThinkingOption {
+  id: string;
+  label: string;
+}
+
+export interface AIProviderInfo {
+  id: AIProviderName;
+  label: string;
+}
 
 export interface AIProviderModelDetails {
   family: string;
-  families: Array<string>;
+  families: string[];
   parameter_size: string;
   quantization_level: string;
   context_length: number;
@@ -13,14 +23,28 @@ export interface AIProviderModelDetails {
 
 export interface AIProviderModel {
   name: string;
+  provider: AIProviderName;
   model: string;
   size: number;
   details: AIProviderModelDetails;
   capabilities: string[];
+  thinking?: AIThinkingOption[];
+}
+
+export interface AIChatRequest {
+  message: string;
+  model: string;
+  thinking?: string;
 }
 
 export interface AIProvider {
+  readonly name: AIProviderName;
+
   health(): Promise<HealthStatus>;
-  chat(message: string, model: string, think?: boolean): Promise<string>;
+
+  chat(request: AIChatRequest): Promise<string>;
+
   models(): Promise<AIProviderModel[]>;
+
+  thinking(model: string): Promise<AIThinkingOption[]>;
 }
