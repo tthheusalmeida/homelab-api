@@ -7,7 +7,7 @@ import type {
   AIProvider,
   AIProviderModel,
   AIThinkingOption,
-} from '../ai.model';
+} from '../../ai.model';
 
 import { hasProperty, isObject, isString } from 'src/utils/type-guards';
 
@@ -15,6 +15,10 @@ import {
   HealthStatus,
   HealthStatusOptions,
 } from 'src/modules/health/health.model';
+
+import { AiUsageService } from '../../usage/ai-usage.service';
+
+import { pricing } from './ollama.pricing';
 
 function parseOllamaChatResponse(data: unknown): string {
   if (
@@ -87,7 +91,27 @@ export class OllamaProvider implements AIProvider {
   readonly name = 'ollama' as const;
   private readonly baseUrl = 'http://localhost:11434';
 
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly usageService: AiUsageService,
+  ) {}
+
+  private calculateCost(
+    model: string,
+    inputTokens: number,
+    outputTokens: number,
+  ): number {
+    const modelPricing = pricing.get(model);
+
+    if (!modelPricing) {
+      return 0;
+    }
+
+    return (
+      (inputTokens / 1_000_000) * modelPricing.inputPerMillionTokens +
+      (outputTokens / 1_000_000) * modelPricing.outputPerMillionTokens
+    );
+  }
 
   async health(): Promise<HealthStatus> {
     try {
@@ -106,6 +130,8 @@ export class OllamaProvider implements AIProvider {
   }
 
   async chat(request: AIChatRequest): Promise<string> {
+    const startedAt = Date.now();
+
     try {
       const response = await firstValueFrom(
         this.httpService.post(`${this.baseUrl}/api/chat`, {
@@ -121,8 +147,56 @@ export class OllamaProvider implements AIProvider {
         }),
       );
 
-      return parseOllamaChatResponse(response.data);
+      const latencyMs = Date.now() - startedAt;
+
+      const text = parseOllamaChatResponse(response.data);
+
+      const data: unknown = response.data;
+
+      const inputTokens =
+        isObject(data) && hasProperty(data, 'prompt_eval_count')
+          ? Number(data.prompt_eval_count ?? 0)
+          : 0;
+
+      const outputTokens =
+        isObject(data) && hasProperty(data, 'eval_count')
+          ? Number(data.eval_count ?? 0)
+          : 0;
+
+      const totalTokens = inputTokens + outputTokens;
+
+      const estimatedCost = this.calculateCost(
+        request.model,
+        inputTokens,
+        outputTokens,
+      );
+
+      this.usageService.record({
+        provider: 'ollama',
+        model: request.model,
+        operation: 'chat',
+        inputTokens,
+        outputTokens,
+        totalTokens,
+        estimatedCost,
+        latencyMs,
+        success: true,
+      });
+
+      return text;
     } catch (error) {
+      this.usageService.record({
+        provider: 'ollama',
+        model: request.model,
+        operation: 'chat',
+        inputTokens: 0,
+        outputTokens: 0,
+        totalTokens: 0,
+        estimatedCost: 0,
+        latencyMs: Date.now() - startedAt,
+        success: false,
+      });
+
       throw new Error('A requisição para o chat do Ollama falhou.', {
         cause: error,
       });
@@ -135,7 +209,9 @@ export class OllamaProvider implements AIProvider {
         this.httpService.get(`${this.baseUrl}/api/tags`),
       );
 
-      return parseOllamaModelsResponse(response.data);
+      const result = parseOllamaModelsResponse(response.data);
+
+      return result.sort((a, b) => a.name.localeCompare(b.name));
     } catch (error) {
       throw new Error('A requisição para listar modelos do Ollama falhou.', {
         cause: error,

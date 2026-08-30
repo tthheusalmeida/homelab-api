@@ -1,13 +1,16 @@
 import { Controller, Get, Query, Param } from '@nestjs/common';
 
-import { AIService } from './ai.service';
 import type { AIProviderName } from './ai.model';
 
-import { AiUsageQueryDto } from './dto/ai-usage-query.dto';
+import { AIService } from './ai.service';
+import { AiUsageService } from './usage/ai-usage.service';
 
 @Controller('ai')
 export class AIController {
-  constructor(private readonly aiService: AIService) {}
+  constructor(
+    private readonly aiService: AIService,
+    private readonly aiUsageService: AiUsageService,
+  ) {}
 
   @Get('providers')
   providers() {
@@ -28,7 +31,7 @@ export class AIController {
   }
 
   @Get('usage')
-  usage(@Query() query: AiUsageQueryDto) {
-    return this.aiService.usage(query);
+  getUsage(@Query('provider') provider?: AIProviderName) {
+    return this.aiUsageService.getUsage(provider);
   }
 }

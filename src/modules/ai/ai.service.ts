@@ -8,8 +8,8 @@ import type {
   AIThinkingOption,
 } from './ai.model';
 
-import { OllamaProvider } from './providers/ollama.provider';
-import { GeminiProvider } from './providers/gemini.provider';
+import { OllamaProvider } from './providers/ollama/ollama.provider';
+import { GeminiProvider } from './providers/gemini/gemini.provider';
 
 import { AiChatDto } from './dto/ai-chat.dto';
 
