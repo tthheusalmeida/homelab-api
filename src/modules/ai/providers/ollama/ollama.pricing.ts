@@ -25,11 +25,4 @@ export const pricing = new Map<string, OllamaModelPricing>([
       outputPerMillionTokens: 0,
     },
   ],
-  [
-    'llama3.2:3b',
-    {
-      inputPerMillionTokens: 0,
-      outputPerMillionTokens: 0,
-    },
-  ],
 ]);
