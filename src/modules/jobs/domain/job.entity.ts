@@ -1,21 +1,25 @@
 import { uuidv7 } from 'uuidv7';
 import { JobStatus } from './job-status.enum';
 
-const generateUuidV7 = uuidv7 as unknown as () => string;
-
 export class Job {
   public readonly id: string;
   public readonly createdAt: Date;
 
+  private _name: string;
   private _status: JobStatus;
   private _startedAt?: Date;
   private _completedAt?: Date;
   private _error?: string;
 
-  constructor() {
-    this.id = generateUuidV7();
+  constructor(name: string) {
+    this.id = uuidv7();
     this.createdAt = new Date();
+    this._name = name;
     this._status = JobStatus.PENDING;
+  }
+
+  get name(): string | undefined {
+    return this._name;
   }
 
   get status(): JobStatus {
@@ -59,5 +63,16 @@ export class Job {
   fail(error: string): void {
     this._status = JobStatus.FAILED;
     this._error = error;
+  }
+
+  toJSON() {
+    return {
+      completedAt: this.completedAt,
+      createdAt: this.createdAt,
+      id: this.id,
+      name: this.name,
+      status: this.status,
+      startedAt: this.startedAt,
+    };
   }
 }

@@ -11,8 +11,8 @@ export class JobService {
     private readonly repository: JobRepository,
   ) {}
 
-  create(): Job {
-    const job = new Job();
+  create(name: string): Job {
+    const job = new Job(name);
 
     this.repository.save(job);
 

@@ -28,10 +28,10 @@ export class JobController {
 
   @ApiBody({ type: VideoTranscriptDownloadDto })
   @Post('video-transcript')
-  async createVideoTranscript(@Body('url') url: string) {
-    const job = this.jobs.create();
+  createVideoTranscript(@Body('url') url: string) {
+    const job = this.jobs.create('video-transcript');
 
-    await this.runner.run(job, this.videoProcessor, url);
+    void this.runner.run(job, this.videoProcessor, url);
 
     return {
       id: job.id,

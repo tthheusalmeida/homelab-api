@@ -19,25 +19,19 @@ export class JobRunner {
     job: Job,
     processor: JobProcessor<TInput, TResult>,
     input: TInput,
-  ): Promise<TResult> {
+  ): Promise<void> {
     try {
       job.start();
-
       this.repository.save(job);
 
-      const result = await processor.process(job, input);
+      await processor.process(job, input);
 
       job.complete();
-
       this.repository.save(job);
-
-      return result;
     } catch (error) {
-      job.fail(error instanceof Error ? error.message : 'Unknown error');
+      job.fail(error instanceof Error ? error.message : 'Erro desconhecido');
 
       this.repository.save(job);
-
-      throw error;
     }
   }
 }
