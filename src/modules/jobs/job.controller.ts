@@ -7,6 +7,7 @@ import { JobRunner } from './application/job-runner.service';
 
 import { VideoTranscriptDownloadDto } from './processors/video-transcript/dto/video-transcript-download.dto';
 import { VideoTranscriptJobProcessor } from './processors/video-transcript/video-transcript-job.processor';
+import { JobTypeConfig } from './jobs.types';
 
 @Controller('jobs')
 export class JobController {
@@ -19,6 +20,14 @@ export class JobController {
   @Get()
   findAll(): Job[] {
     return this.jobs.findAll();
+  }
+
+  @Get('types')
+  findTypes() {
+    return Object.entries(JobTypeConfig).map(([type, config]) => ({
+      type,
+      description: config.description,
+    }));
   }
 
   @Get(':id')
