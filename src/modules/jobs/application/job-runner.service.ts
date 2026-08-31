@@ -10,12 +10,50 @@ import type { JobRepository } from '../infrastructure/repositories/job.repositor
 
 @Injectable()
 export class JobRunner {
+  private queue: Array<{
+    job: Job;
+    processor: JobProcessor<any, any>;
+    input: any;
+  }> = [];
+
+  private running = false;
+
   constructor(
     @Inject(JOB_REPOSITORY)
     private readonly repository: JobRepository,
   ) {}
 
-  async run<TInput, TResult>(
+  run<TInput, TResult>(
+    job: Job,
+    processor: JobProcessor<TInput, TResult>,
+    input: TInput,
+  ): void {
+    this.queue.push({
+      job,
+      processor,
+      input,
+    });
+
+    void this.processQueue();
+  }
+
+  private async processQueue(): Promise<void> {
+    if (this.running) {
+      return;
+    }
+
+    this.running = true;
+
+    while (this.queue.length > 0) {
+      const item = this.queue.shift()!;
+
+      await this.execute(item.job, item.processor, item.input);
+    }
+
+    this.running = false;
+  }
+
+  private async execute<TInput, TResult>(
     job: Job,
     processor: JobProcessor<TInput, TResult>,
     input: TInput,
