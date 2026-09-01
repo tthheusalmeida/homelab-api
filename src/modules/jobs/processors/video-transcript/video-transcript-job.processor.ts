@@ -5,7 +5,7 @@ import { JobProcessor } from '../../domain/job-processor.interface';
 
 import { VideoService } from 'src/modules/video/video.service';
 import { WhisperService } from 'src/modules/ai/whisper/whisper.service';
-import { normalizeText } from 'src/utils/text.utils';
+import { normalizeText, removeAllegedAuthorship } from 'src/utils/text';
 
 @Injectable()
 export class VideoTranscriptJobProcessor implements JobProcessor<
@@ -17,23 +17,17 @@ export class VideoTranscriptJobProcessor implements JobProcessor<
     private readonly whisperService: WhisperService,
   ) {}
 
-  async process(job: Job, videoUrl: string): Promise<string> {
+  async process(job: Job, videoUrl: string): Promise<void> {
     const videoPath = await this.downloadVideo(job, videoUrl);
     const audioPath = await this.convertToAudio(job, videoPath);
     await this.deleteVideo(job, videoPath);
 
     const rawTranscription = await this.transcribe(job, audioPath);
-    const transcription = normalizeText(rawTranscription);
+    const transcription = removeAllegedAuthorship(
+      normalizeText(rawTranscription),
+    );
     await this.saveTranscription(job, transcription, `${job.id}.txt`);
     await this.deleteAudio(job, audioPath);
-
-    // console.log(`[${job.id}] Gerando texto...`);
-
-    // const markdown = await this.generateMarkdown(transcript);
-
-    // return markdown;
-
-    return `Baixou ['id': ${job.id}, 'status': ${job.status}`;
   }
 
   private async downloadVideo(job: Job, videoUrl: string): Promise<string> {

@@ -24,9 +24,8 @@ export class JobController {
 
   @Get('types')
   findTypes() {
-    return Object.entries(JobTypeConfig).map(([type, config]) => ({
-      type,
-      description: config.description,
+    return Object.values(JobTypeConfig).map((config) => ({
+      ...config,
     }));
   }
 

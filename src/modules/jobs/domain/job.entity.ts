@@ -1,10 +1,12 @@
 import { uuidv7 } from 'uuidv7';
 import { JobStatus } from './job-status.enum';
+import { JobTypeConfig } from '../jobs.types';
 
 export class Job {
   public readonly id: string;
   public readonly createdAt: Date;
 
+  private _label: string;
   private _name: string;
   private _status: JobStatus;
   private _startedAt?: Date;
@@ -12,10 +14,21 @@ export class Job {
   private _error?: string;
 
   constructor(name: string) {
+    const jobTypeConfig = JobTypeConfig[name as keyof typeof JobTypeConfig];
+
+    if (!jobTypeConfig) {
+      throw Error(`Não há processo com o tipo '${name}' definido.`);
+    }
+
     this.id = uuidv7();
     this.createdAt = new Date();
+    this._label = jobTypeConfig.label;
     this._name = name;
     this._status = JobStatus.PENDING;
+  }
+
+  get label(): string | undefined {
+    return this._label;
   }
 
   get name(): string | undefined {
@@ -71,6 +84,7 @@ export class Job {
       createdAt: this.createdAt,
       id: this.id,
       name: this.name,
+      label: this.label,
       status: this.status,
       startedAt: this.startedAt,
     };
