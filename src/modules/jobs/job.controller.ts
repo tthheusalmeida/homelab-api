@@ -5,8 +5,8 @@ import { Job } from './domain/job.entity';
 import { JobService } from './application/job.service';
 import { JobRunner } from './application/job-runner.service';
 
-import { VideoTranscriptDownloadDto } from './processors/video-transcript/dto/video-transcript-download.dto';
-import { VideoTranscriptJobProcessor } from './processors/video-transcript/video-transcript-job.processor';
+import { VideoToTranscriptDownloadDto } from './processors/video-to-transcript/dto/video-to-transcript-download.dto';
+import { VideoToTranscriptJobProcessor } from './processors/video-to-transcript/video-to-transcript-job.processor';
 import { JobTypeConfig } from './jobs.types';
 
 @Controller('jobs')
@@ -14,7 +14,7 @@ export class JobController {
   constructor(
     private readonly jobs: JobService,
     private readonly runner: JobRunner,
-    private readonly videoProcessor: VideoTranscriptJobProcessor,
+    private readonly videoProcessor: VideoToTranscriptJobProcessor,
   ) {}
 
   @Get()
@@ -34,10 +34,10 @@ export class JobController {
     return this.jobs.findById(id);
   }
 
-  @ApiBody({ type: VideoTranscriptDownloadDto })
-  @Post('video-transcript')
+  @ApiBody({ type: VideoToTranscriptDownloadDto })
+  @Post('video-to-transcript')
   createVideoTranscript(@Body('url') url: string) {
-    const job = this.jobs.create('video-transcript');
+    const job = this.jobs.create('video-to-transcript');
 
     void this.runner.run(job, this.videoProcessor, url);
 

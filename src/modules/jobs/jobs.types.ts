@@ -1,5 +1,5 @@
 export const JobTypeOptions = {
-  VIDEO_TRANSCRIPT: 'video-transcript',
+  VIDEO_TRANSCRIPT: 'video-to-transcript',
 } as const;
 
 export type JobType = (typeof JobTypeOptions)[keyof typeof JobTypeOptions];
