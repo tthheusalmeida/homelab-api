@@ -10,6 +10,7 @@ import { JOB_REPOSITORY } from './infrastructure/repositories/job.repository';
 import { AIModule } from '../ai/ai.module';
 import { VideoModule } from '../video/video.module';
 import { VideoToTranscriptJobProcessor } from './processors/video-to-transcript/video-to-transcript-job.processor';
+import { VideoToSummaryJobProcessor } from './processors/video-to-resume/video-to-summary-job.processor';
 
 @Module({
   imports: [VideoModule, AIModule],
@@ -20,6 +21,7 @@ import { VideoToTranscriptJobProcessor } from './processors/video-to-transcript/
     JobRunner,
 
     VideoToTranscriptJobProcessor,
+    VideoToSummaryJobProcessor,
 
     InMemoryJobRepository,
 

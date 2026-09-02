@@ -37,6 +37,10 @@ export class WhisperService {
       const text = await fs.promises.readFile(outputPath, 'utf8');
 
       return text.trim();
+    } catch (error) {
+      throw new Error('Falha ao transcrever o áudio.', {
+        cause: error,
+      });
     } finally {
       await fs.promises.unlink(outputPath).catch(() => {});
     }

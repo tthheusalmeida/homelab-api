@@ -82,6 +82,7 @@ export class Job {
     return {
       completedAt: this.completedAt,
       createdAt: this.createdAt,
+      error: this.error,
       id: this.id,
       name: this.name,
       label: this.label,

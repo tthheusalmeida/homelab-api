@@ -3,13 +3,20 @@ import { Injectable } from '@nestjs/common';
 import { Job } from '../../domain/job.entity';
 import { JobProcessor } from '../../domain/job-processor.interface';
 
-import { VideoService } from 'src/modules/video/video.service';
-import { WhisperService } from 'src/modules/ai/whisper/whisper.service';
 import { normalizeText, removeAllegedAuthorship } from 'src/utils/text';
 
+import { SummarySpecialistPrompt } from '../../../ai/prompts/summary-specialist.prompt';
+
+import {
+  VideoService,
+  VideoSummarizeOptions,
+} from 'src/modules/video/video.service';
+import { WhisperService } from 'src/modules/ai/whisper/whisper.service';
+import { VideoToSummaryDto } from './dto/video-to-summary.dto';
+
 @Injectable()
-export class VideoToTranscriptJobProcessor implements JobProcessor<
-  string,
+export class VideoToSummaryJobProcessor implements JobProcessor<
+  VideoToSummaryDto,
   string
 > {
   constructor(
@@ -17,8 +24,8 @@ export class VideoToTranscriptJobProcessor implements JobProcessor<
     private readonly whisperService: WhisperService,
   ) {}
 
-  async process(job: Job, videoUrl: string): Promise<void> {
-    const videoPath = await this.downloadVideo(job, videoUrl);
+  async process(job: Job, input: VideoToSummaryDto): Promise<void> {
+    const videoPath = await this.downloadVideo(job, input.url);
     const audioPath = await this.convertToAudio(videoPath);
     await this.deleteVideo(videoPath);
 
@@ -27,7 +34,12 @@ export class VideoToTranscriptJobProcessor implements JobProcessor<
       normalizeText(rawTranscription),
     );
 
-    await this.saveFile(transcription, job.id);
+    const sumamary = await this.summarize(transcription, {
+      providerId: input.providerId,
+      modelId: input.modelId,
+      thinking: input.thinking,
+    });
+    await this.saveFile(sumamary, job.id);
     await this.deleteAudio(audioPath);
   }
 
@@ -56,10 +68,23 @@ export class VideoToTranscriptJobProcessor implements JobProcessor<
     return transcription;
   }
 
+  private async summarize(
+    transcription: string,
+    options: VideoSummarizeOptions,
+  ): Promise<string> {
+    const summary = await this.videoService.summarize(
+      SummarySpecialistPrompt,
+      transcription,
+      options,
+    );
+
+    return summary;
+  }
+
   private async saveFile(
     transcription: string,
     fileName: string,
-    fileExtension: string = '.txt',
+    fileExtension: string = '.md',
   ): Promise<string> {
     const transcriptionPath = await this.videoService.saveFile(
       transcription,
