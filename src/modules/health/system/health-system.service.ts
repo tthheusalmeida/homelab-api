@@ -1,16 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import {
-  HealthCheck,
-  HealthStatus,
+  HealthCheckService,
+  HealthService,
   HealthStatusOptions,
 } from '../health.model';
 
 @Injectable()
-export class HealthSystemService implements HealthCheck {
-  async check(): Promise<HealthStatus> {
+export class HealthSystemService implements HealthCheckService {
+  check(): Promise<HealthService> {
     return Promise.resolve({
-      status: HealthStatusOptions.OK,
       service: 'system',
+      description: 'Serviços do sistema',
+      checks: [
+        {
+          service: 'api',
+          description: 'API do HomeLab',
+          status: HealthStatusOptions.OK,
+        },
+      ],
     });
   }
 }

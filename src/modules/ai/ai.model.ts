@@ -1,4 +1,4 @@
-import { HealthStatus } from '../health/health.model';
+import { HealthCheck } from '../health/health.model';
 
 export type AIProviderName = 'ollama' | 'gemini';
 
@@ -40,7 +40,7 @@ export interface AIChatRequest {
 export interface AIProvider {
   readonly name: AIProviderName;
 
-  health(): Promise<HealthStatus>;
+  health(): Promise<HealthCheck>;
 
   chat(request: AIChatRequest): Promise<string>;
 

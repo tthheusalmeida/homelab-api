@@ -7,11 +7,18 @@ export const HealthStatusOptions = {
 export type HealthStatusType =
   (typeof HealthStatusOptions)[keyof typeof HealthStatusOptions];
 
-export interface HealthStatus {
-  status: HealthStatusType;
+export interface HealthCheck {
   service: string;
+  description: string;
+  status: HealthStatusType;
 }
 
-export interface HealthCheck {
-  check(): Promise<HealthStatus>;
+export interface HealthService {
+  service: string;
+  description: string;
+  checks: HealthCheck[];
+}
+
+export interface HealthCheckService {
+  check(): Promise<HealthService>;
 }

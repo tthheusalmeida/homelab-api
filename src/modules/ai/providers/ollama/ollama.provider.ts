@@ -12,7 +12,7 @@ import type {
 import { hasProperty, isObject, isString } from 'src/utils/type-guards';
 
 import {
-  HealthStatus,
+  HealthCheck,
   HealthStatusOptions,
 } from 'src/modules/health/health.model';
 
@@ -113,18 +113,20 @@ export class OllamaProvider implements AIProvider {
     );
   }
 
-  async health(): Promise<HealthStatus> {
+  async health(): Promise<HealthCheck> {
     try {
       await firstValueFrom(this.httpService.get(`${this.baseUrl}/api/tags`));
 
       return {
-        status: HealthStatusOptions.OK,
         service: 'ollama',
+        description: 'Serviço de IA local',
+        status: HealthStatusOptions.OK,
       };
     } catch {
       return {
-        status: HealthStatusOptions.ERROR,
         service: 'ollama',
+        description: 'Serviço de IA local',
+        status: HealthStatusOptions.ERROR,
       };
     }
   }

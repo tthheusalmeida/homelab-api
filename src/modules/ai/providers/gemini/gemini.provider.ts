@@ -10,50 +10,13 @@ import type {
 } from '../../ai.model';
 
 import {
-  HealthStatus,
+  HealthCheck,
   HealthStatusOptions,
 } from 'src/modules/health/health.model';
 
 import { AiUsageService } from '../../usage/ai-usage.service';
 
 import { pricing } from './gemini.pricing';
-
-// export declare interface Endpoint {
-//   name?: string;
-//   deployedModelId?: string;
-// }
-
-// export declare interface Checkpoint {
-//   checkpointId?: string;
-//   epoch?: string;
-//   step?: string;
-// }
-
-// export declare interface TunedModelInfo {
-//   baseModel?: string;
-//   createTime?: string;
-//   updateTime?: string;
-// }
-
-// interface GeminiModel {
-//   name?: string;
-//   displayName?: string;
-//   description?: string;
-//   version?: string;
-//   endpoints?: Endpoint[];
-//   labels?: Record<string, string>;
-//   tunedModelInfo?: TunedModelInfo;
-//   inputTokenLimit?: number;
-//   outputTokenLimit?: number;
-//   supportedActions?: string[];
-//   defaultCheckpointId?: string;
-//   checkpoints?: Checkpoint[];
-//   temperature?: number;
-//   maxTemperature?: number;
-//   topP?: number;
-//   topK?: number;
-//   thinking?: boolean;
-// }
 
 @Injectable()
 export class GeminiProvider implements AIProvider {
@@ -92,11 +55,12 @@ export class GeminiProvider implements AIProvider {
     );
   }
 
-  async health(): Promise<HealthStatus> {
+  async health(): Promise<HealthCheck> {
     if (!this.apiKey) {
       return {
-        status: HealthStatusOptions.ERROR,
         service: 'gemini',
+        description: 'Google Gemini API',
+        status: HealthStatusOptions.ERROR,
       };
     }
 
@@ -104,13 +68,15 @@ export class GeminiProvider implements AIProvider {
       await this.ai.models.list();
 
       return {
-        status: HealthStatusOptions.OK,
         service: 'gemini',
+        description: 'Google Gemini API',
+        status: HealthStatusOptions.OK,
       };
     } catch {
       return {
-        status: HealthStatusOptions.ERROR,
         service: 'gemini',
+        description: 'Google Gemini API',
+        status: HealthStatusOptions.ERROR,
       };
     }
   }

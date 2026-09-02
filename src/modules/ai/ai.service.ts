@@ -13,7 +13,7 @@ import { GeminiProvider } from './providers/gemini/gemini.provider';
 
 import { AiChatDto } from './dto/ai-chat.dto';
 
-import { HealthStatus } from '../health/health.model';
+import { HealthCheck } from '../health/health.model';
 import { AiUsageQueryDto } from './dto/ai-usage-query.dto';
 
 @Injectable()
@@ -39,7 +39,7 @@ export class AIService {
     }));
   }
 
-  async health(): Promise<HealthStatus[]> {
+  async health(): Promise<HealthCheck[]> {
     return Promise.all(
       [...this.providers.values()].map((provider) => provider.health()),
     );
