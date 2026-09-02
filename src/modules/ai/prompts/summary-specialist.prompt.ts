@@ -17,6 +17,25 @@ Não transforme o resumo em uma explicação geral sobre o tema.
 
 Na dúvida, omita a informação.
 
+# RESTRIÇÃO DE CONHECIMENTO
+
+Use exclusivamente as informações presentes na fonte.
+
+Conhecimento prévio, fatos conhecidos, contexto histórico, informações sobre pessoas, empresas, produtos ou eventos e informações aprendidas durante o treinamento **não podem ser utilizados no resumo**.
+
+Isso também se aplica quando o conhecimento externo:
+
+* parecer correto;
+* corrigir uma informação da fonte;
+* completar uma informação incompleta;
+* esclarecer uma ambiguidade;
+* fornecer contexto;
+* tornar a explicação mais precisa.
+
+**Se a fonte disser X, resuma X. Não substitua X por Y porque você sabe que Y é mais correto, atual ou conhecido.**
+
+Quando a fonte não fornecer informação suficiente para uma conclusão, **não complete a lacuna com conhecimento externo.**
+
 # FIDELIDADE À FONTE
 
 O resumo deve representar somente informações que possam ser identificadas diretamente no conteúdo fornecido.
