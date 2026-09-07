@@ -1,6 +1,6 @@
 import { uuidv7 } from 'uuidv7';
 import { JobStatus } from './job-status.enum';
-import { JobTypeConfig } from '../jobs.types';
+import { JobStep, JobTypeConfig } from '../jobs.types';
 
 export class Job {
   public readonly id: string;
@@ -13,6 +13,8 @@ export class Job {
   private _completedAt?: Date;
   private _error?: string;
 
+  private _steps: JobStep[] = [];
+
   constructor(name: string) {
     const jobTypeConfig = JobTypeConfig[name as keyof typeof JobTypeConfig];
 
@@ -22,9 +24,15 @@ export class Job {
 
     this.id = uuidv7();
     this.createdAt = new Date();
+
     this._label = jobTypeConfig.label;
     this._name = name;
     this._status = JobStatus.PENDING;
+
+    this._steps = jobTypeConfig.steps.map((step) => ({
+      ...step,
+      status: JobStatus.PENDING,
+    }));
   }
 
   get label(): string | undefined {
@@ -49,6 +57,10 @@ export class Job {
 
   get error(): string | undefined {
     return this._error;
+  }
+
+  get steps(): JobStep[] {
+    return this._steps;
   }
 
   start(): void {
@@ -78,6 +90,50 @@ export class Job {
     this._error = error;
   }
 
+  startStep(name: string): void {
+    const step = this.findStep(name);
+
+    step.status = JobStatus.RUNNING;
+  }
+
+  completeStep(name: string): void {
+    const step = this.findStep(name);
+
+    step.status = JobStatus.COMPLETED;
+  }
+
+  failStep(name: string): void {
+    const step = this.findStep(name);
+
+    step.status = JobStatus.FAILED;
+  }
+
+  async runStep<T>(name: string, callback: () => Promise<T>): Promise<T> {
+    this.startStep(name);
+
+    try {
+      const result = await callback();
+
+      this.completeStep(name);
+
+      return result;
+    } catch (error) {
+      this.failStep(name);
+
+      throw error;
+    }
+  }
+
+  private findStep(name: string): JobStep {
+    const step = this._steps.find((step) => step.name === name);
+
+    if (!step) {
+      throw new Error(`Etapa "${name}" não existe no Job "${this.id}".`);
+    }
+
+    return step;
+  }
+
   toJSON() {
     return {
       completedAt: this.completedAt,
@@ -88,6 +144,7 @@ export class Job {
       label: this.label,
       status: this.status,
       startedAt: this.startedAt,
+      steps: this.steps,
     };
   }
 }

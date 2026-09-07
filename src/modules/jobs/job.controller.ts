@@ -10,8 +10,8 @@ import { JobTypeConfig } from './jobs.types';
 import { VideoToTranscriptDownloadDto } from './processors/video-to-transcript/dto/video-to-transcript-download.dto';
 import { VideoToSummaryDto } from './processors/video-to-resume/dto/video-to-summary.dto';
 
-import { VideoToTranscriptJobProcessor } from './processors/video-to-transcript/video-to-transcript-job.processor';
-import { VideoToSummaryJobProcessor } from './processors/video-to-resume/video-to-summary-job.processor';
+import { VideoToTranscriptJobProcessor } from './processors/video-to-transcript/processor';
+import { VideoToSummaryJobProcessor } from './processors/video-to-resume/processor';
 
 @Controller('jobs')
 export class JobController {
