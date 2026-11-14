@@ -22,6 +22,8 @@ import {
 import {
   AddChapterDto,
   CreateBookDto,
+  SavePositionDto,
+  SetReadDto,
   SetStructureDto,
   UpdateBookDto,
 } from './dto/book.dto';
@@ -77,6 +79,28 @@ export class BookController {
     @Body() dto: AddChapterDto,
   ): Promise<BookDetail> {
     return this.books.addChapter(id, dto?.documentId, dto?.moduleId);
+  }
+
+  @Put(':id/chapters/:documentId/read')
+  setChapterRead(
+    @Param('id') id: string,
+    @Param('documentId') documentId: string,
+    @Body() dto: SetReadDto,
+  ): Promise<BookDetail> {
+    return this.books.setChapterRead(id, documentId, dto?.read);
+  }
+
+  @Delete(':id/progress')
+  resetProgress(@Param('id') id: string): Promise<BookDetail> {
+    return this.books.resetProgress(id);
+  }
+
+  @Put(':id/position')
+  savePosition(
+    @Param('id') id: string,
+    @Body() dto: SavePositionDto,
+  ): Promise<BookDetail> {
+    return this.books.saveLastPosition(id, dto);
   }
 
   @Get(':id/read')

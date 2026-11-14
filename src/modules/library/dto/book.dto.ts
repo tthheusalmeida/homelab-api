@@ -69,6 +69,21 @@ export class SetStructureDto {
   modules!: BookModuleDto[];
 }
 
+export class SetReadDto {
+  @ApiProperty({
+    description: 'true marca o capítulo como lido; false desmarca',
+  })
+  read!: boolean;
+}
+
+export class SavePositionDto {
+  @ApiProperty()
+  documentId!: string;
+
+  @ApiProperty({ description: 'Id do elemento (título ou capítulo) na tela' })
+  elementId!: string;
+}
+
 export class AddChapterDto {
   @ApiProperty()
   documentId!: string;

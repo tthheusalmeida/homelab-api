@@ -4,6 +4,10 @@ import {
   cleanBookTitle,
   cleanCoverColor,
   cleanCoverImageUrl,
+  cleanPosition,
+  resetProgress,
+  setRead,
+  withProgress,
   isBookKind,
   newBook,
   normalizeModules,
@@ -230,5 +234,206 @@ describe('book cover', () => {
     const raw = { ...newBook({ title: 'T' }), coverColor: 'pink' };
 
     expect(parseBook(raw).coverColor).toBe('blue');
+  });
+});
+
+describe('book progress', () => {
+  const bookWith = (...ids: string[]) => {
+    const book = newBook({ title: 'T' });
+    book.modules = [{ id: 'm1', title: '', documentIds: ids }];
+
+    return book;
+  };
+  const always = () => true;
+
+  it('when created, should have no progress', () => {
+    const book = newBook({ title: 'T' });
+
+    expect(book).toMatchObject({
+      readDocumentIds: [],
+      lastPosition: null,
+      completedAt: null,
+    });
+  });
+
+  describe('setRead', () => {
+    it('when marking, should add the chapter once', () => {
+      const once = setRead(bookWith('a', 'b'), 'a', true);
+      const twice = setRead(once, 'a', true);
+
+      expect(twice.readDocumentIds).toEqual(['a']);
+    });
+
+    it('when unmarking, should remove it', () => {
+      const book = setRead(bookWith('a', 'b'), 'a', true);
+
+      expect(setRead(book, 'a', false).readDocumentIds).toEqual([]);
+    });
+  });
+
+  describe('withProgress', () => {
+    it('when every available chapter is read, should complete the book now', () => {
+      const now = new Date('2026-11-14T10:00:00.000Z');
+      const book = setRead(setRead(bookWith('a', 'b'), 'a', true), 'b', true);
+
+      expect(withProgress(book, always, now).completedAt).toBe(
+        '2026-11-14T10:00:00.000Z',
+      );
+    });
+
+    it('when the book was already complete, should keep the first completion date', () => {
+      const book = {
+        ...setRead(setRead(bookWith('a', 'b'), 'a', true), 'b', true),
+        completedAt: '2026-01-01T00:00:00.000Z',
+      };
+
+      expect(withProgress(book, always).completedAt).toBe(
+        '2026-01-01T00:00:00.000Z',
+      );
+    });
+
+    it('when some chapter is still unread, should not be complete and clear the date', () => {
+      const book = {
+        ...setRead(bookWith('a', 'b'), 'a', true),
+        completedAt: '2026-01-01T00:00:00.000Z',
+      };
+
+      expect(withProgress(book, always).completedAt).toBeNull();
+    });
+
+    it('when an unavailable chapter is the only unread one, should still complete', () => {
+      const book = setRead(bookWith('a', 'gone'), 'a', true);
+
+      expect(
+        withProgress(book, (id) => id !== 'gone').completedAt,
+      ).not.toBeNull();
+    });
+
+    it('when no chapter is available, should not be complete', () => {
+      expect(withProgress(bookWith('a'), () => false).completedAt).toBeNull();
+      expect(withProgress(bookWith(), always).completedAt).toBeNull();
+    });
+
+    it('when read chapters left the book, should drop them', () => {
+      const book = {
+        ...bookWith('a'),
+        readDocumentIds: ['a', 'removido'],
+      };
+
+      expect(withProgress(book, always).readDocumentIds).toEqual(['a']);
+    });
+
+    it('when the last position points to a chapter that left the book, should clear it', () => {
+      const book = {
+        ...bookWith('a'),
+        lastPosition: { documentId: 'removido', elementId: 'x' },
+      };
+
+      expect(withProgress(book, always).lastPosition).toBeNull();
+    });
+
+    it('when the last position is still in the book, should keep it', () => {
+      const position = { documentId: 'a', elementId: 'a-intro' };
+
+      expect(
+        withProgress({ ...bookWith('a'), lastPosition: position }, always)
+          .lastPosition,
+      ).toEqual(position);
+    });
+  });
+
+  describe('resetProgress', () => {
+    it('when the book has progress, should clear read chapters, position and completion', () => {
+      const book = {
+        ...setRead(setRead(bookWith('a', 'b'), 'a', true), 'b', true),
+        lastPosition: { documentId: 'a', elementId: 'a-x' },
+        completedAt: '2026-11-14T10:00:00.000Z',
+      };
+
+      expect(resetProgress(book)).toMatchObject({
+        readDocumentIds: [],
+        lastPosition: null,
+        completedAt: null,
+      });
+    });
+
+    it('when resetting, should keep the structure and the book data', () => {
+      const book = {
+        ...setRead(bookWith('a', 'b'), 'a', true),
+        title: 'Pós',
+        coverColor: 'rose' as const,
+      };
+
+      const reset = resetProgress(book);
+
+      expect(reset.modules).toEqual(book.modules);
+      expect(reset.title).toBe('Pós');
+      expect(reset.coverColor).toBe('rose');
+      expect(reset.updatedAt).toBe(book.updatedAt);
+    });
+
+    it('when resetting a book without progress, should change nothing', () => {
+      const book = bookWith('a');
+
+      expect(resetProgress(book)).toEqual(book);
+    });
+  });
+
+  describe('cleanPosition', () => {
+    it('when valid, should return the position', () => {
+      expect(cleanPosition({ documentId: 'a', elementId: 'a-x' })).toEqual({
+        documentId: 'a',
+        elementId: 'a-x',
+      });
+    });
+
+    it.each([
+      null,
+      {},
+      { documentId: '', elementId: 'x' },
+      { documentId: 'a', elementId: '  ' },
+      { documentId: 3, elementId: 'x' },
+      { documentId: 'a', elementId: 'x'.repeat(201) },
+    ])('when the position is %j, should throw', (value) => {
+      expect(() => cleanPosition(value)).toThrow('Posição de leitura inválida');
+    });
+  });
+
+  describe('parseBook', () => {
+    it('when a book saved before progress existed is parsed, should get empty progress', () => {
+      const {
+        readDocumentIds: _r,
+        lastPosition: _l,
+        completedAt: _c,
+        ...legacy
+      } = newBook({ title: 'Antigo' });
+
+      expect(parseBook(legacy)).toMatchObject({
+        readDocumentIds: [],
+        lastPosition: null,
+        completedAt: null,
+      });
+    });
+
+    it('when progress is saved, should read it back without duplicates', () => {
+      const raw = {
+        ...newBook({ title: 'T' }),
+        readDocumentIds: ['a', 'a', '', 3, 'b'],
+        lastPosition: { documentId: 'a', elementId: 'a-x' },
+        completedAt: '2026-11-14T10:00:00.000Z',
+      };
+
+      expect(parseBook(raw)).toMatchObject({
+        readDocumentIds: ['a', 'b'],
+        lastPosition: { documentId: 'a', elementId: 'a-x' },
+        completedAt: '2026-11-14T10:00:00.000Z',
+      });
+    });
+
+    it('when the saved position is malformed, should drop it', () => {
+      const raw = { ...newBook({ title: 'T' }), lastPosition: { x: 1 } };
+
+      expect(parseBook(raw).lastPosition).toBeNull();
+    });
   });
 });

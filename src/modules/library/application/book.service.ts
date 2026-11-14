@@ -12,11 +12,16 @@ import {
   cleanCoverImageUrl,
   cleanSubtitle,
   isBookKind,
+  cleanPosition,
   newBook,
   normalizeModules,
+  resetProgress,
+  setRead,
+  withProgress,
   type Book,
   type BookCoverColor,
   type BookKind,
+  type BookPosition,
   type ModuleInput,
 } from '../domain/book';
 import { DocumentStatusOptions } from '../domain/library.types';
@@ -34,6 +39,12 @@ export interface BookSummary {
   coverColor: BookCoverColor;
   coverImageUrl: string;
   chapterCount: number;
+  /** Capítulos que ainda existem na biblioteca (base do progresso). */
+  availableCount: number;
+  /** Quantos desses já foram lidos. */
+  readCount: number;
+  completedAt: string | null;
+  lastPosition: BookPosition | null;
   moduleCount: number;
   updatedAt: string;
   /** Só quando a lista é pedida para um documento: ele já está no livro? */
@@ -103,6 +114,12 @@ export class BookService {
           coverColor: book.coverColor,
           coverImageUrl: book.coverImageUrl,
           chapterCount: ids.length,
+          availableCount: ids.filter((id) => this.isPublished(id)).length,
+          readCount: ids.filter(
+            (id) => this.isPublished(id) && book.readDocumentIds.includes(id),
+          ).length,
+          completedAt: book.completedAt,
+          lastPosition: book.lastPosition,
           moduleCount: book.modules.length,
           updatedAt: book.updatedAt,
           ...(documentId === undefined
@@ -210,11 +227,14 @@ export class BookService {
       }
     }
 
-    const next: Book = {
-      ...book,
-      modules: normalized,
-      updatedAt: new Date().toISOString(),
-    };
+    const next = withProgress(
+      {
+        ...book,
+        modules: normalized,
+        updatedAt: new Date().toISOString(),
+      },
+      (documentId) => this.isPublished(documentId),
+    );
 
     await this.storage.save(next);
 
@@ -246,15 +266,77 @@ export class BookService {
       throw new BadRequestException('Módulo não encontrado neste livro.');
     }
 
-    const next: Book = {
-      ...book,
-      modules: book.modules.map((module) =>
-        module.id === target.id
-          ? { ...module, documentIds: [...module.documentIds, documentId] }
-          : module,
-      ),
-      updatedAt: new Date().toISOString(),
-    };
+    const next = withProgress(
+      {
+        ...book,
+        modules: book.modules.map((module) =>
+          module.id === target.id
+            ? { ...module, documentIds: [...module.documentIds, documentId] }
+            : module,
+        ),
+        updatedAt: new Date().toISOString(),
+      },
+      (documentId) => this.isPublished(documentId),
+    );
+
+    await this.storage.save(next);
+
+    return this.detail(next);
+  }
+
+  /**
+   * Marca ou desmarca um capítulo como lido. Quando o último capítulo é lido o
+   * livro fica concluído (`completedAt`); desmarcar qualquer um desfaz isso.
+   * O progresso não muda o "atualizado em" do livro.
+   */
+  async setChapterRead(
+    id: string,
+    documentId: string,
+    read: unknown,
+  ): Promise<BookDetail> {
+    const book = await this.load(id);
+
+    if (typeof read !== 'boolean') {
+      throw new BadRequestException(
+        'O campo "read" deve ser verdadeiro ou falso.',
+      );
+    }
+
+    if (!bookDocumentIds(book).includes(documentId)) {
+      throw new BadRequestException('O capítulo não está neste livro.');
+    }
+
+    const next = withProgress(setRead(book, documentId, read), (other) =>
+      this.isPublished(other),
+    );
+
+    await this.storage.save(next);
+
+    return this.detail(next);
+  }
+
+  /**
+   * Zera o progresso do livro de uma vez: capítulos lidos, ponto de "continuar
+   * de onde parou" e conclusão. A estrutura e os dados do livro não mudam.
+   */
+  async resetProgress(id: string): Promise<BookDetail> {
+    const next = resetProgress(await this.load(id));
+
+    await this.storage.save(next);
+
+    return this.detail(next);
+  }
+
+  /** Guarda o último ponto lido (para "continuar de onde parou"). */
+  async saveLastPosition(id: string, input: unknown): Promise<BookDetail> {
+    const book = await this.load(id);
+    const position = this.guard(() => cleanPosition(input));
+
+    if (!bookDocumentIds(book).includes(position.documentId)) {
+      throw new BadRequestException('O capítulo não está neste livro.');
+    }
+
+    const next: Book = { ...book, lastPosition: position };
 
     await this.storage.save(next);
 

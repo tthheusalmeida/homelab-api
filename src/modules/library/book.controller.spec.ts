@@ -12,6 +12,9 @@ describe('BookController', () => {
     | 'remove'
     | 'setStructure'
     | 'addChapter'
+    | 'setChapterRead'
+    | 'resetProgress'
+    | 'saveLastPosition'
     | 'read'
     | 'search',
     jest.Mock
@@ -27,6 +30,9 @@ describe('BookController', () => {
       remove: jest.fn().mockResolvedValue(undefined),
       setStructure: jest.fn().mockResolvedValue('structure'),
       addChapter: jest.fn().mockResolvedValue('chapter'),
+      setChapterRead: jest.fn().mockResolvedValue('read'),
+      resetProgress: jest.fn().mockResolvedValue('reset'),
+      saveLastPosition: jest.fn().mockResolvedValue('position'),
       read: jest.fn().mockResolvedValue('reading'),
       search: jest.fn().mockResolvedValue(['hit']),
     };
@@ -82,6 +88,34 @@ describe('BookController', () => {
     await controller.addChapter('b1', { documentId: 'd1', moduleId: 'm1' });
 
     expect(service.addChapter).toHaveBeenCalledWith('b1', 'd1', 'm1');
+  });
+
+  it('when marking a chapter as read, should pass the book, the chapter and the flag', async () => {
+    await expect(
+      controller.setChapterRead('b1', 'd1', { read: true }),
+    ).resolves.toBe('read');
+
+    expect(service.setChapterRead).toHaveBeenCalledWith('b1', 'd1', true);
+  });
+
+  it('when the read body is missing, should pass undefined so the service rejects it', async () => {
+    await controller.setChapterRead('b1', 'd1', undefined as never);
+
+    expect(service.setChapterRead).toHaveBeenCalledWith('b1', 'd1', undefined);
+  });
+
+  it('when resetting the progress, should delegate with the book id', async () => {
+    await expect(controller.resetProgress('b1')).resolves.toBe('reset');
+
+    expect(service.resetProgress).toHaveBeenCalledWith('b1');
+  });
+
+  it('when saving the position, should pass the body', async () => {
+    const dto = { documentId: 'd1', elementId: 'd1-x' };
+
+    await expect(controller.savePosition('b1', dto)).resolves.toBe('position');
+
+    expect(service.saveLastPosition).toHaveBeenCalledWith('b1', dto);
   });
 
   it('when searching, should pass the query and default it to empty', async () => {

@@ -193,6 +193,222 @@ describe('BookService', () => {
     });
   });
 
+  describe('progress', () => {
+    const bookWith = async (...titles: string[]) => {
+      const ids: string[] = [];
+
+      for (const title of titles) {
+        ids.push(await article(title));
+      }
+
+      const book = await books.create({ title: 'Pós' });
+      await books.setStructure(book.id, [{ documentIds: ids }]);
+
+      return { book, ids };
+    };
+
+    it('when listed, should show zero progress for a new book', async () => {
+      const { ids } = await bookWith('A', 'B');
+
+      expect((await books.list())[0]).toMatchObject({
+        chapterCount: ids.length,
+        availableCount: 2,
+        readCount: 0,
+        completedAt: null,
+        lastPosition: null,
+      });
+    });
+
+    it('when a chapter is marked as read, should count it and keep updatedAt', async () => {
+      const { book, ids } = await bookWith('A', 'B');
+      const before = (await books.get(book.id)).updatedAt;
+
+      const detail = await books.setChapterRead(book.id, ids[0], true);
+
+      expect(detail.readDocumentIds).toEqual([ids[0]]);
+      expect(detail.completedAt).toBeNull();
+      expect(detail.updatedAt).toBe(before);
+      expect((await books.list())[0].readCount).toBe(1);
+    });
+
+    it('when the last unread chapter is marked, should complete the book', async () => {
+      const { book, ids } = await bookWith('A', 'B');
+      await books.setChapterRead(book.id, ids[0], true);
+
+      const detail = await books.setChapterRead(book.id, ids[1], true);
+
+      expect(detail.completedAt).toEqual(expect.any(String));
+      expect((await books.list())[0].completedAt).toBe(detail.completedAt);
+    });
+
+    it('when a chapter is unmarked on a complete book, should undo the completion', async () => {
+      const { book, ids } = await bookWith('A', 'B');
+      await books.setChapterRead(book.id, ids[0], true);
+      await books.setChapterRead(book.id, ids[1], true);
+
+      const detail = await books.setChapterRead(book.id, ids[0], false);
+
+      expect(detail.completedAt).toBeNull();
+      expect(detail.readDocumentIds).toEqual([ids[1]]);
+    });
+
+    it('when marking something that is not a chapter of the book, should be a bad request', async () => {
+      const { book } = await bookWith('A');
+
+      await expect(
+        books.setChapterRead(book.id, 'estranho', true),
+      ).rejects.toThrow('não está neste livro');
+    });
+
+    it('when the read flag is not a boolean, should be a bad request', async () => {
+      const { book, ids } = await bookWith('A');
+
+      await expect(
+        books.setChapterRead(book.id, ids[0], 'sim'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('when the book does not exist, should be not found', async () => {
+      await expect(books.setChapterRead('x', 'a', true)).rejects.toThrow(
+        NotFoundException,
+      );
+      await expect(
+        books.saveLastPosition('x', { documentId: 'a', elementId: 'b' }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('when a chapter is added to a complete book, should no longer be complete', async () => {
+      const { book, ids } = await bookWith('A');
+      await books.setChapterRead(book.id, ids[0], true);
+      const extra = await article('Nova aula');
+
+      const detail = await books.addChapter(book.id, extra);
+
+      expect(detail.completedAt).toBeNull();
+      expect(detail.readDocumentIds).toEqual([ids[0]]);
+    });
+
+    it('when a read chapter is removed from the structure, should drop it from the progress', async () => {
+      const { book, ids } = await bookWith('A', 'B');
+      await books.setChapterRead(book.id, ids[0], true);
+
+      const detail = await books.setStructure(book.id, [
+        { documentIds: [ids[1]] },
+      ]);
+
+      expect(detail.readDocumentIds).toEqual([]);
+    });
+
+    it('when the only unread chapter becomes unavailable, should complete on the next mark', async () => {
+      const { book, ids } = await bookWith('A', 'B');
+      await library.archive(ids[1]);
+
+      const detail = await books.setChapterRead(book.id, ids[0], true);
+
+      expect(detail.completedAt).not.toBeNull();
+      expect((await books.list())[0]).toMatchObject({
+        availableCount: 1,
+        readCount: 1,
+      });
+    });
+
+    it('when the last position is saved, should be returned in the detail and the list', async () => {
+      const { book, ids } = await bookWith('A');
+      const position = { documentId: ids[0], elementId: `${ids[0]}-intro` };
+
+      const detail = await books.saveLastPosition(book.id, position);
+
+      expect(detail.lastPosition).toEqual(position);
+      expect((await books.list())[0].lastPosition).toEqual(position);
+    });
+
+    it('when the position is invalid or from another chapter, should be a bad request', async () => {
+      const { book } = await bookWith('A');
+
+      await expect(books.saveLastPosition(book.id, {})).rejects.toThrow(
+        'Posição de leitura inválida',
+      );
+      await expect(
+        books.saveLastPosition(book.id, {
+          documentId: 'estranho',
+          elementId: 'x',
+        }),
+      ).rejects.toThrow('não está neste livro');
+    });
+
+    it('when the progress is reset, should clear everything in one go and keep the book', async () => {
+      const { book, ids } = await bookWith('A', 'B');
+      await books.setChapterRead(book.id, ids[0], true);
+      await books.setChapterRead(book.id, ids[1], true);
+      await books.saveLastPosition(book.id, {
+        documentId: ids[0],
+        elementId: 'x',
+      });
+      const before = await books.get(book.id);
+
+      const detail = await books.resetProgress(book.id);
+
+      expect(detail).toMatchObject({
+        readDocumentIds: [],
+        lastPosition: null,
+        completedAt: null,
+        title: 'Pós',
+        updatedAt: before.updatedAt,
+      });
+      expect(detail.modules[0].chapters).toHaveLength(2);
+      expect((await books.list())[0]).toMatchObject({
+        readCount: 0,
+        completedAt: null,
+        lastPosition: null,
+      });
+    });
+
+    it('when the progress is reset, should persist across a new service instance', async () => {
+      const { book, ids } = await bookWith('A');
+      await books.setChapterRead(book.id, ids[0], true);
+      await books.resetProgress(book.id);
+
+      const again = new BookService(
+        new BookStorage(tmp.storage),
+        new LibraryIndex(tmp.storage),
+        library,
+      );
+
+      expect((await again.get(book.id)).readDocumentIds).toEqual([]);
+    });
+
+    it('when resetting a book that has no progress, should succeed and change nothing', async () => {
+      const { book } = await bookWith('A');
+
+      await expect(books.resetProgress(book.id)).resolves.toMatchObject({
+        readDocumentIds: [],
+        completedAt: null,
+      });
+    });
+
+    it('when the book to reset does not exist, should be not found', async () => {
+      await expect(books.resetProgress('x')).rejects.toThrow(NotFoundException);
+    });
+
+    it('when the progress is saved, should survive a new service instance', async () => {
+      const { book, ids } = await bookWith('A');
+      await books.setChapterRead(book.id, ids[0], true);
+      const position = { documentId: ids[0], elementId: 'x' };
+      await books.saveLastPosition(book.id, position);
+
+      const again = new BookService(
+        new BookStorage(tmp.storage),
+        new LibraryIndex(tmp.storage),
+        library,
+      );
+
+      expect(await again.get(book.id)).toMatchObject({
+        readDocumentIds: [ids[0]],
+        lastPosition: position,
+      });
+    });
+  });
+
   describe('update / remove', () => {
     it('when updating, should change only the given fields', async () => {
       const book = await books.create({ title: 'T', description: 'd' });

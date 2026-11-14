@@ -27,6 +27,12 @@ export interface BookModule {
   documentIds: string[];
 }
 
+/** Último ponto lido de um livro: o capítulo e o elemento (título) na tela. */
+export interface BookPosition {
+  documentId: string;
+  elementId: string;
+}
+
 /**
  * Um livro é só uma lista ordenada de documentos que já existem, agrupados em
  * módulos. O conteúdo continua nos documentos.
@@ -41,6 +47,12 @@ export interface Book {
   coverColor: BookCoverColor;
   /** URL http(s) de uma imagem para a capa; vazio = só a cor. */
   coverImageUrl: string;
+  /** Ids dos documentos (capítulos) que o usuário marcou como lidos. */
+  readDocumentIds: string[];
+  /** Último ponto lido, para "continuar de onde parou". */
+  lastPosition: BookPosition | null;
+  /** Quando o último capítulo foi lido (livro "concluído"); null se não está completo. */
+  completedAt: string | null;
   createdAt: string;
   updatedAt: string;
   modules: BookModule[];
@@ -133,6 +145,9 @@ export function newBook(
     subtitle: cleanSubtitle(input.subtitle),
     coverColor: cleanCoverColor(input.coverColor),
     coverImageUrl: cleanCoverImageUrl(input.coverImageUrl),
+    readDocumentIds: [],
+    lastPosition: null,
+    completedAt: null,
     createdAt: iso,
     updatedAt: iso,
     modules: [{ id: uuidv7(), title: '', documentIds: [] }],
@@ -199,6 +214,69 @@ export function bookDocumentIds(book: Book): string[] {
   return book.modules.flatMap((module) => module.documentIds);
 }
 
+/** Valida o ponto de leitura enviado pelo front. */
+export function cleanPosition(value: unknown): BookPosition {
+  const position = value as Partial<BookPosition> | null;
+
+  if (
+    !position ||
+    typeof position.documentId !== 'string' ||
+    position.documentId.trim() === '' ||
+    typeof position.elementId !== 'string' ||
+    position.elementId.trim() === '' ||
+    position.elementId.length > 200
+  ) {
+    throw new BookValidationError('Posição de leitura inválida.');
+  }
+
+  return { documentId: position.documentId, elementId: position.elementId };
+}
+
+/** Zera o progresso: nenhum capítulo lido, sem posição e sem conclusão. */
+export function resetProgress(book: Book): Book {
+  return {
+    ...book,
+    readDocumentIds: [],
+    lastPosition: null,
+    completedAt: null,
+  };
+}
+
+/** Marca (ou desmarca) um capítulo como lido, sem repetir. */
+export function setRead(book: Book, documentId: string, read: boolean): Book {
+  const others = book.readDocumentIds.filter((id) => id !== documentId);
+
+  return { ...book, readDocumentIds: read ? [...others, documentId] : others };
+}
+
+/**
+ * Deixa o progresso coerente com a estrutura atual: descarta lidos e posição
+ * de capítulos que saíram do livro e recalcula a conclusão. O livro está
+ * concluído quando todos os capítulos disponíveis foram lidos (há pelo menos
+ * um); a data da conclusão é mantida enquanto ele continuar completo.
+ */
+export function withProgress(
+  book: Book,
+  isAvailable: (documentId: string) => boolean,
+  now = new Date(),
+): Book {
+  const inBook = new Set(bookDocumentIds(book));
+  const read = book.readDocumentIds.filter((id) => inBook.has(id));
+  const available = [...inBook].filter(isAvailable);
+  const complete =
+    available.length > 0 && available.every((id) => read.includes(id));
+
+  return {
+    ...book,
+    readDocumentIds: read,
+    lastPosition:
+      book.lastPosition && inBook.has(book.lastPosition.documentId)
+        ? book.lastPosition
+        : null,
+    completedAt: complete ? (book.completedAt ?? now.toISOString()) : null,
+  };
+}
+
 /** Valida o JSON lido do disco; erro descritivo se estiver inconsistente. */
 export function parseBook(raw: unknown): Book {
   const value = raw as Partial<Book> | null;
@@ -227,8 +305,30 @@ export function parseBook(raw: unknown): Book {
       : DEFAULT_COVER_COLOR,
     coverImageUrl:
       typeof value.coverImageUrl === 'string' ? value.coverImageUrl : '',
+    // Livros salvos antes do progresso existir não têm estes campos.
+    readDocumentIds: Array.isArray(value.readDocumentIds)
+      ? [
+          ...new Set(
+            value.readDocumentIds.filter(
+              (id): id is string => typeof id === 'string' && id !== '',
+            ),
+          ),
+        ]
+      : [],
+    lastPosition: parsePosition(value.lastPosition),
+    completedAt:
+      typeof value.completedAt === 'string' ? value.completedAt : null,
     createdAt: value.createdAt,
     updatedAt: value.updatedAt,
     modules: normalizeModules(value.modules),
   };
+}
+
+/** Posição salva no arquivo; qualquer coisa fora do formato vira "sem posição". */
+function parsePosition(value: unknown): BookPosition | null {
+  try {
+    return cleanPosition(value);
+  } catch {
+    return null;
+  }
 }
