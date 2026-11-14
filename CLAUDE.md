@@ -29,6 +29,10 @@ API NestJS 11 (TypeScript) do HomeLab. Prefixo global: `api/v1`. Porta: `PORT` o
 - `modules/health/{ai,system}` — `GET health/ai`, `GET health/system`
 - `modules/jobs/` — `domain/` (Job, status), `application/` (JobService, JobRunner), `infrastructure/repositories/` (in-memory), `processors/{video-to-transcript,video-to-resume}`, `jobs.types.ts` (tipos e pipelines)
 - `modules/library/domain/` — base da biblioteca: tipos, nomes de arquivo e categorias (`naming.ts`), frontmatter (`frontmatter.ts`), metadados (`document.ts`)
+- `modules/library/infrastructure/` — `library-storage.ts` (leitura/escrita dos `.md` em `LIB_DIR` e `TEMP_DOCS_DIR`) e `library-index.ts` (índice em memória só de metadados)
+- `modules/library/application/` — `library.service.ts` (publicar, arquivar, descartar, criar artigo, categorias, tags) e `library-search.ts` (busca e filtros)
+- `modules/library/` — `library.controller.ts` (`/library`), `dto/`, `domain/categories.ts` (árvore), `domain/preview.ts`
+- `test/helpers/tmp-library.ts` — biblioteca em pasta temporária para testes com arquivos reais
 - `config/env/` — `env.ts` (lista de variáveis), `env.validation.ts` (falha no boot se faltar), `app-config.ts` (`AppConfig`, leitura tipada)
 - `modules/video/` — `VideoService` (download, ffmpeg, salvar, resumir, apagar)
 - `utils/` — `text.ts`, `type-guards.ts`
