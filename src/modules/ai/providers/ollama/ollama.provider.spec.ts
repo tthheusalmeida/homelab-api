@@ -1,5 +1,6 @@
 import { of, throwError } from 'rxjs';
 import type { HttpService } from '@nestjs/axios';
+import type { AppConfig } from '../../../../config/env/app-config';
 
 import { OllamaProvider } from './ollama.provider';
 import { AiUsageService } from '../../usage/ai-usage.service';
@@ -19,6 +20,7 @@ const validModel = (name: string) => ({
 });
 
 describe('OllamaProvider', () => {
+  const OLLAMA_URL = 'http://ollama.test:1234';
   let http: { get: jest.Mock; post: jest.Mock };
   let usage: AiUsageService;
   let provider: OllamaProvider;
@@ -26,7 +28,9 @@ describe('OllamaProvider', () => {
   beforeEach(() => {
     http = { get: jest.fn(), post: jest.fn() };
     usage = new AiUsageService();
-    provider = new OllamaProvider(http as unknown as HttpService, usage);
+    provider = new OllamaProvider(http as unknown as HttpService, usage, {
+      get: () => OLLAMA_URL,
+    } as unknown as AppConfig);
   });
 
   it('when read, should have name ollama', () => {
@@ -72,7 +76,7 @@ describe('OllamaProvider', () => {
 
       expect(text).toBe('olá');
       expect(http.post).toHaveBeenCalledWith(
-        'http://localhost:11434/api/chat',
+        `${OLLAMA_URL}/api/chat`,
         expect.objectContaining({
           model: 'qwen3.5:8b',
           think: true,
@@ -112,9 +116,9 @@ describe('OllamaProvider', () => {
     it('when the chat response is invalid, should record a failure and throw', async () => {
       http.post.mockReturnValue(of({ data: { foo: 1 } }));
 
-      await expect(
-        provider.chat({ message: 'a', model: 'm' }),
-      ).rejects.toThrow('chat do Ollama falhou');
+      await expect(provider.chat({ message: 'a', model: 'm' })).rejects.toThrow(
+        'chat do Ollama falhou',
+      );
 
       expect(usage.getUsage().recentRequests[0].success).toBe(false);
     });
@@ -173,10 +177,9 @@ describe('OllamaProvider', () => {
         { id: 'off', label: 'Desativado' },
         { id: 'on', label: 'Ativado' },
       ]);
-      expect(http.post).toHaveBeenCalledWith(
-        'http://localhost:11434/api/show',
-        { name: 'm' },
-      );
+      expect(http.post).toHaveBeenCalledWith(`${OLLAMA_URL}/api/show`, {
+        name: 'm',
+      });
     });
 
     it('when the model lacks the thinking capability, should return an empty list', async () => {

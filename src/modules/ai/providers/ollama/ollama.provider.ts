@@ -19,6 +19,8 @@ import {
 import { AiUsageService } from '../../usage/ai-usage.service';
 
 import { pricing } from './ollama.pricing';
+import { EnvKeys } from '../../../../config/env/env';
+import { AppConfig } from '../../../../config/env/app-config';
 
 function parseOllamaChatResponse(data: unknown): string {
   if (
@@ -89,12 +91,15 @@ function parseOllamaModelsResponse(data: unknown): AIProviderModel[] {
 @Injectable()
 export class OllamaProvider implements AIProvider {
   readonly name = 'ollama' as const;
-  private readonly baseUrl = 'http://localhost:11434';
+  private readonly baseUrl: string;
 
   constructor(
     private readonly httpService: HttpService,
     private readonly usageService: AiUsageService,
-  ) {}
+    config: AppConfig,
+  ) {
+    this.baseUrl = config.get(EnvKeys.OLLAMA_URL);
+  }
 
   private calculateCost(
     model: string,

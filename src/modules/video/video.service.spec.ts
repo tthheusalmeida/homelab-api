@@ -5,6 +5,7 @@ import * as path from 'node:path';
 import type { AddressInfo } from 'node:net';
 
 import { VideoService } from './video.service';
+import type { AppConfig } from '../../config/env/app-config';
 import type { AIService } from '../ai/ai.service';
 
 const execFileMock = jest.fn();
@@ -22,7 +23,17 @@ describe('VideoService', () => {
   beforeEach(() => {
     tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'video-spec-'));
     chat = jest.fn();
-    service = new VideoService({ chat } as unknown as AIService);
+    service = new VideoService(
+      { chat } as unknown as AIService,
+      {
+        get: (key: string) =>
+          ({
+            TEMP_VIDEO_DIR: path.join(tmp, 'video'),
+            TEMP_AUDIO_DIR: path.join(tmp, 'audio'),
+            TEMP_DOCS_DIR: path.join(tmp, 'docs'),
+          })[key],
+      } as unknown as AppConfig,
+    );
     execFileMock.mockReset();
   });
 
@@ -47,7 +58,9 @@ describe('VideoService', () => {
           res.end();
         }
       });
-      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>((resolve) =>
+        server.listen(0, '127.0.0.1', resolve),
+      );
       baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
     });
 
@@ -60,6 +73,12 @@ describe('VideoService', () => {
 
       expect(out).toBe(path.resolve(tmp, 'v.mp4'));
       expect(fs.readFileSync(out, 'utf8')).toBe('conteudo');
+    });
+
+    it('when no destination dir is given, should save in TEMP_VIDEO_DIR', async () => {
+      const out = await service.download(`${baseUrl}/video`, 'padrao.mp4');
+
+      expect(out).toBe(path.resolve(tmp, 'video', 'padrao.mp4'));
     });
 
     it('when the URL redirects, should follow it', async () => {
@@ -99,6 +118,17 @@ describe('VideoService', () => {
   });
 
   describe('toAudio', () => {
+    it('when no dir is given, should write the audio in TEMP_AUDIO_DIR', async () => {
+      execFileMock.mockImplementation(
+        (_c: string, _a: string[], cb: (e: null, r: object) => void) =>
+          cb(null, {}),
+      );
+
+      const out = await service.toAudio('/x/a.mp4');
+
+      expect(out).toBe(path.resolve(tmp, 'audio', 'a.wav'));
+    });
+
     it('when converting, should call ffmpeg as mono 16kHz PCM and return the .wav path', async () => {
       execFileMock.mockImplementation(
         (_c: string, _a: string[], cb: (e: null, r: object) => void) =>
@@ -136,6 +166,13 @@ describe('VideoService', () => {
   });
 
   describe('saveFile', () => {
+    it('when no extension or dir is given, should save a .md in TEMP_DOCS_DIR', async () => {
+      const out = await service.saveFile('x', 'doc');
+
+      expect(out).toBe(path.resolve(tmp, 'docs', 'doc.md'));
+      expect(fs.existsSync(out)).toBe(true);
+    });
+
     it('when saving a file, should write name plus extension and return the path', async () => {
       const out = await service.saveFile('conteúdo', 'job1', '.md', tmp);
 

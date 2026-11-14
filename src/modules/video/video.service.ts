@@ -9,6 +9,8 @@ import { promisify } from 'node:util';
 
 import { AIProviderName } from '../ai/ai.model';
 import { AIService } from '../ai/ai.service';
+import { EnvKeys } from '../../config/env/env';
+import { AppConfig } from '../../config/env/app-config';
 
 const execFileAsync = promisify(execFile);
 
@@ -20,12 +22,15 @@ export interface VideoSummarizeOptions {
 
 @Injectable()
 export class VideoService {
-  constructor(private readonly aiService: AIService) {}
+  constructor(
+    private readonly aiService: AIService,
+    private readonly config: AppConfig,
+  ) {}
 
   async download(
     url: string,
     fileName: string = 'video-baixado.mp4',
-    destinationDir: string = 'D:/homelab/temp/video',
+    destinationDir: string = this.config.get(EnvKeys.TEMP_VIDEO_DIR),
   ): Promise<string> {
     // path.resolve lida automaticamente com diferenças de sistema operacional
     const outputPath = path.resolve(destinationDir, fileName);
@@ -111,7 +116,7 @@ export class VideoService {
 
   async toAudio(
     videoPath: string,
-    destinationDir: string = 'D:/homelab/temp/audio',
+    destinationDir: string = this.config.get(EnvKeys.TEMP_AUDIO_DIR),
   ): Promise<string> {
     try {
       fs.mkdirSync(destinationDir, { recursive: true });
@@ -151,8 +156,8 @@ export class VideoService {
   async saveFile(
     transcription: string,
     fileName: string = 'transcription',
-    fileExtension: string = '.txt',
-    destinationDir: string = 'D:/homelab/temp/txt',
+    fileExtension: string = '.md',
+    destinationDir: string = this.config.get(EnvKeys.TEMP_DOCS_DIR),
   ): Promise<string> {
     try {
       fs.mkdirSync(destinationDir, { recursive: true });

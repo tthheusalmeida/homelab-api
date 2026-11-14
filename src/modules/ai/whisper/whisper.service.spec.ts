@@ -1,4 +1,6 @@
 import * as fs from 'node:fs';
+import * as path from 'node:path';
+import type { AppConfig } from '../../../config/env/app-config';
 
 import { WhisperService } from './whisper.service';
 
@@ -17,17 +19,29 @@ const existsSync = fs.existsSync as jest.Mock;
 const readFile = fs.promises.readFile as unknown as jest.Mock;
 const unlink = fs.promises.unlink as unknown as jest.Mock;
 
+const config = {
+  get: (key: string) =>
+    ({
+      WHISPER_DIR: '/whisper',
+      WHISPER_EXECUTABLE: 'cli.exe',
+      WHISPER_MODEL: 'model.bin',
+    })[key],
+} as unknown as AppConfig;
+
 describe('WhisperService', () => {
   let service: WhisperService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new WhisperService();
+    service = new WhisperService(config);
     existsSync.mockReturnValue(true);
     unlink.mockResolvedValue(undefined);
     execFileMock.mockImplementation(
-      (_cmd: string, _args: string[], cb: (e: Error | null, r?: object) => void) =>
-        cb(null, { stdout: '', stderr: '' }),
+      (
+        _cmd: string,
+        _args: string[],
+        cb: (e: Error | null, r?: object) => void,
+      ) => cb(null, { stdout: '', stderr: '' }),
     );
   });
 
@@ -48,6 +62,18 @@ describe('WhisperService', () => {
     existsSync.mockImplementation((p: string) => p !== 'a.wav');
 
     await expect(service.transcribe('a.wav')).rejects.toThrow('a.wav');
+  });
+
+  it('when transcribing, should run the executable and model from the configured dir', async () => {
+    readFile.mockResolvedValue('x');
+
+    await service.transcribe('a.wav');
+
+    const [cmd, args] = execFileMock.mock.calls[0] as [string, string[]];
+    expect(cmd).toBe(path.join('/whisper', 'cli.exe'));
+    expect(args[args.indexOf('-m') + 1]).toBe(
+      path.join('/whisper', 'model.bin'),
+    );
   });
 
   it('when transcribing, should use Portuguese, return trimmed text and delete the .txt', async () => {

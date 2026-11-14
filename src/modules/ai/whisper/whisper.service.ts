@@ -5,15 +5,26 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { promisify } from 'node:util';
 
-const execFileAsync = promisify(execFile);
+import { EnvKeys } from '../../../config/env/env';
+import { AppConfig } from '../../../config/env/app-config';
 
-const basePath = 'D:/homelab/ai/whisper';
+const execFileAsync = promisify(execFile);
 
 @Injectable()
 export class WhisperService {
-  private readonly whisperPath = path.join(basePath, 'whisper-cli.exe');
+  private readonly whisperPath: string;
 
-  private readonly modelPath = path.join(basePath, 'ggml-large-v3-turbo.bin');
+  private readonly modelPath: string;
+
+  constructor(config: AppConfig) {
+    const basePath = config.get(EnvKeys.WHISPER_DIR);
+
+    this.whisperPath = path.join(
+      basePath,
+      config.get(EnvKeys.WHISPER_EXECUTABLE),
+    );
+    this.modelPath = path.join(basePath, config.get(EnvKeys.WHISPER_MODEL));
+  }
 
   async transcribe(audioPath: string): Promise<string> {
     this.validateFiles(audioPath);
