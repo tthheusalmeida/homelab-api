@@ -8,6 +8,11 @@ import { WhisperService } from 'src/modules/ai/whisper/whisper.service';
 import { normalizeText, removeAllegedAuthorship } from 'src/utils/text';
 import { VideoToTranscriptSteps } from './steps';
 
+import { newPendingMeta } from 'src/modules/library/domain/document';
+import { serializeDocument } from 'src/modules/library/domain/frontmatter';
+import { buildBaseName } from 'src/modules/library/domain/naming';
+import { DocumentTypeOptions } from 'src/modules/library/domain/library.types';
+
 @Injectable()
 export class VideoToTranscriptJobProcessor implements JobProcessor<
   string,
@@ -27,7 +32,7 @@ export class VideoToTranscriptJobProcessor implements JobProcessor<
     const transcription = removeAllegedAuthorship(
       normalizeText(rawTranscription),
     );
-    await this.saveFile(job, transcription, job.id);
+    await this.saveFile(job, transcription, videoUrl);
     await this.deleteAudio(job, audioPath);
   }
 
@@ -58,11 +63,21 @@ export class VideoToTranscriptJobProcessor implements JobProcessor<
   private async saveFile(
     job: Job,
     transcription: string,
-    fileName: string,
-    fileExtension = '.txt',
+    videoUrl: string,
   ): Promise<string> {
+    const meta = newPendingMeta({
+      id: job.id,
+      title: job.label ?? 'Transcrição de vídeo',
+      type: DocumentTypeOptions.TRANSCRIPTION,
+      sourceUrl: videoUrl,
+    });
+
     return job.runStep(VideoToTranscriptSteps.SAVE_FILE.name, () =>
-      this.videoService.saveFile(transcription, fileName, fileExtension),
+      this.videoService.saveFile(
+        serializeDocument(meta, transcription),
+        buildBaseName(meta.title, job.id),
+        '.md',
+      ),
     );
   }
 

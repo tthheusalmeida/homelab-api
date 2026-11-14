@@ -1,5 +1,6 @@
 import { VideoToSummaryJobProcessor } from './processor';
 import { Job } from '../../domain/job.entity';
+import { parseDocument } from 'src/modules/library/domain/frontmatter';
 import { JobStatus } from '../../domain/job-status.enum';
 import { SummarySpecialistPrompt } from '../../../ai/prompts/summary-specialist.prompt';
 import type { VideoService } from 'src/modules/video/video.service';
@@ -76,10 +77,30 @@ describe('VideoToSummaryJobProcessor', () => {
     );
   });
 
-  it('when saving, should write the summary as .md named after the job id', async () => {
+  it('when saving, should write a .md named <slug>_<job id>', async () => {
     await processor.process(job, dto);
 
-    expect(video.saveFile).toHaveBeenCalledWith('# resumo', job.id, '.md');
+    expect(video.saveFile).toHaveBeenCalledWith(
+      expect.any(String),
+      `resumo_de_video_${job.id}`,
+      '.md',
+    );
+  });
+
+  it('when saving, should put the summary in the body and a pending summary frontmatter with the video url', async () => {
+    await processor.process(job, dto);
+
+    const { meta, body } = parseDocument(
+      video.saveFile.mock.calls[0][0] as string,
+    );
+    expect(body).toBe('# resumo\n');
+    expect(meta).toMatchObject({
+      id: job.id,
+      type: 'summary',
+      source: 'video',
+      sourceUrl: dto.url,
+      status: 'pending',
+    });
   });
 
   it('when everything succeeds, should complete all steps', async () => {

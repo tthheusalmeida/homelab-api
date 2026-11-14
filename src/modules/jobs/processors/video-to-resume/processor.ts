@@ -15,6 +15,11 @@ import {
 
 import { VideoToResumeSteps } from './steps';
 
+import { newPendingMeta } from 'src/modules/library/domain/document';
+import { serializeDocument } from 'src/modules/library/domain/frontmatter';
+import { buildBaseName } from 'src/modules/library/domain/naming';
+import { DocumentTypeOptions } from 'src/modules/library/domain/library.types';
+
 @Injectable()
 export class VideoToSummaryJobProcessor implements JobProcessor<
   VideoToSummaryDto,
@@ -40,7 +45,7 @@ export class VideoToSummaryJobProcessor implements JobProcessor<
       thinking: input.thinking,
     });
 
-    await this.saveFile(job, summary, job.id);
+    await this.saveFile(job, summary, input.url);
     await this.deleteAudio(job, audioPath);
   }
 
@@ -85,11 +90,21 @@ export class VideoToSummaryJobProcessor implements JobProcessor<
   private async saveFile(
     job: Job,
     summary: string,
-    fileName: string,
-    fileExtension = '.md',
+    videoUrl: string,
   ): Promise<string> {
+    const meta = newPendingMeta({
+      id: job.id,
+      title: job.label ?? 'Resumo de vídeo',
+      type: DocumentTypeOptions.SUMMARY,
+      sourceUrl: videoUrl,
+    });
+
     return job.runStep(VideoToResumeSteps.SAVE_FILE.name, () =>
-      this.videoService.saveFile(summary, fileName, fileExtension),
+      this.videoService.saveFile(
+        serializeDocument(meta, summary),
+        buildBaseName(meta.title, job.id),
+        '.md',
+      ),
     );
   }
 

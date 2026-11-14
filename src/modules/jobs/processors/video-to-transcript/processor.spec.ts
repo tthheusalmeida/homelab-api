@@ -1,5 +1,6 @@
 import { VideoToTranscriptJobProcessor } from './processor';
 import { Job } from '../../domain/job.entity';
+import { parseDocument } from 'src/modules/library/domain/frontmatter';
 import { JobStatus } from '../../domain/job-status.enum';
 import type { VideoService } from 'src/modules/video/video.service';
 import type { WhisperService } from 'src/modules/ai/whisper/whisper.service';
@@ -26,10 +27,15 @@ describe('VideoToTranscriptJobProcessor', () => {
       download: track('download', '/tmp/v.mp4'),
       toAudio: track('toAudio', '/tmp/a.wav'),
       deleteVideo: track('deleteVideo'),
-      saveFile: track('saveFile', '/tmp/out.txt'),
+      saveFile: track('saveFile', '/tmp/out.md'),
       deleteAudio: track('deleteAudio'),
     };
-    whisper = { transcribe: track('transcribe', 'texto\n  cru Legenda por Sônia Ruberti.') };
+    whisper = {
+      transcribe: track(
+        'transcribe',
+        'texto\n  cru Legenda por Sônia Ruberti.',
+      ),
+    };
 
     processor = new VideoToTranscriptJobProcessor(
       video as unknown as VideoService,
@@ -60,10 +66,35 @@ describe('VideoToTranscriptJobProcessor', () => {
     );
   });
 
-  it('when processing, should save the normalized transcript without the signature as .txt', async () => {
+  it('when processing, should save a .md named <slug>_<job id>', async () => {
     await processor.process(job, 'http://x/v.mp4');
 
-    expect(video.saveFile).toHaveBeenCalledWith('texto cru', job.id, '.txt');
+    expect(video.saveFile).toHaveBeenCalledWith(
+      expect.any(String),
+      `transcricao_de_video_${job.id}`,
+      '.md',
+    );
+  });
+
+  it('when processing, should save the normalized transcript without the signature as the body', async () => {
+    await processor.process(job, 'http://x/v.mp4');
+
+    const content = video.saveFile.mock.calls[0][0] as string;
+    expect(parseDocument(content).body).toBe('texto cru\n');
+  });
+
+  it('when processing, should add a pending transcription frontmatter with the video url', async () => {
+    await processor.process(job, 'http://x/v.mp4');
+
+    const { meta } = parseDocument(video.saveFile.mock.calls[0][0] as string);
+    expect(meta).toMatchObject({
+      id: job.id,
+      type: 'transcription',
+      source: 'video',
+      sourceUrl: 'http://x/v.mp4',
+      status: 'pending',
+      category: [],
+    });
   });
 
   it('when everything succeeds, should complete all steps', async () => {
