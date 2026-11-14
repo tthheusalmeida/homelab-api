@@ -150,6 +150,87 @@ describe('LibraryStorage', () => {
       expect(doc.fileName).toBe('segunda_maneira_id1.md');
     });
 
+    describe('category from the folder', () => {
+      const moveTo = async (...folders: string[]): Promise<string> => {
+        const original = await storage.save(published(), 'texto');
+        const dir = path.join(lib, ...folders);
+
+        fs.mkdirSync(dir, { recursive: true });
+
+        const moved = path.join(dir, path.basename(original));
+
+        fs.renameSync(original, moved);
+
+        return moved;
+      };
+
+      it('when a published file was moved to another folder, should use the folder as category', async () => {
+        const moved = await moveTo('Estudos', 'Docker');
+
+        const doc = await storage.read(moved);
+
+        expect(doc.meta.category).toEqual(['Estudos', 'Docker']);
+      });
+
+      it('when the file stays in its own category folders, should keep the category', async () => {
+        const file = await storage.save(published(), 'texto');
+
+        const doc = await storage.read(file);
+
+        expect(doc.meta.category).toEqual(['Ciência da Computação', 'DevOps']);
+      });
+
+      it('when an archived file was moved, should also use the folder', async () => {
+        const original = await storage.save(
+          published({ status: 'archived' }),
+          'texto',
+        );
+        const dir = path.join(lib, 'Outra');
+
+        fs.mkdirSync(dir);
+        fs.renameSync(original, path.join(dir, path.basename(original)));
+
+        const doc = await storage.read(path.join(dir, path.basename(original)));
+
+        expect(doc.meta.category).toEqual(['Outra']);
+      });
+
+      it('when the file is in the root of the lib, should keep the category from the file', async () => {
+        const original = await storage.save(published(), 'texto');
+        const inRoot = path.join(lib, path.basename(original));
+
+        fs.renameSync(original, inRoot);
+
+        const doc = await storage.read(inRoot);
+
+        expect(doc.meta.category).toEqual(['Ciência da Computação', 'DevOps']);
+      });
+
+      it('when the file is deeper than four folders, should keep the category from the file', async () => {
+        const moved = await moveTo('a', 'b', 'c', 'd', 'e');
+
+        const doc = await storage.read(moved);
+
+        expect(doc.meta.category).toEqual(['Ciência da Computação', 'DevOps']);
+      });
+
+      it('when the folder name is not a valid category, should keep the category from the file', async () => {
+        const moved = await moveTo('CON');
+
+        const doc = await storage.read(moved);
+
+        expect(doc.meta.category).toEqual(['Ciência da Computação', 'DevOps']);
+      });
+
+      it('when the document is pending, should not use the inbox folder as category', async () => {
+        const file = await storage.save(meta(), 'texto');
+
+        const doc = await storage.read(file);
+
+        expect(doc.meta.category).toEqual([]);
+      });
+    });
+
     it('when the file has no frontmatter, should throw naming the file', async () => {
       fs.mkdirSync(inbox, { recursive: true });
       const file = path.join(inbox, 'solto_id9.md');

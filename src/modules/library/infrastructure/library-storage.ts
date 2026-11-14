@@ -9,6 +9,7 @@ import { EnvKeys } from 'src/config/env/env';
 import { parseDocument, serializeDocument } from '../domain/frontmatter';
 import {
   DocumentStatusOptions,
+  MAX_CATEGORY_DEPTH,
   type DocumentMeta,
 } from '../domain/library.types';
 import {
@@ -74,6 +75,39 @@ export class LibraryStorage {
     return result.sort();
   }
 
+  /**
+   * A pasta em `LIB_DIR` manda na categoria: quem move o arquivo de pasta muda
+   * a categoria sem editar o frontmatter. Vale só para publicado/arquivado, com
+   * 1 a 4 níveis de pasta válidos; fora disso mantém a categoria do arquivo.
+   */
+  private categoryFromLocation(filePath: string, meta: DocumentMeta): string[] {
+    if (meta.status === DocumentStatusOptions.PENDING) {
+      return meta.category;
+    }
+
+    const relative = path.relative(this.libDir, path.dirname(filePath));
+
+    if (
+      relative === '' ||
+      relative.startsWith('..') ||
+      path.isAbsolute(relative)
+    ) {
+      return meta.category;
+    }
+
+    const folders = relative.split(path.sep);
+
+    if (folders.length > MAX_CATEGORY_DEPTH) {
+      return meta.category;
+    }
+
+    try {
+      return sanitizeCategoryPath(folders);
+    } catch {
+      return meta.category;
+    }
+  }
+
   /** Procura pelo id no nome do arquivo, sem ler o conteúdo. */
   async findById(root: string, id: string): Promise<string | null> {
     const files = await this.listMarkdownFiles(root);
@@ -98,7 +132,12 @@ export class LibraryStorage {
         );
       }
 
-      return { path: filePath, fileName, meta, body };
+      return {
+        path: filePath,
+        fileName,
+        meta: { ...meta, category: this.categoryFromLocation(filePath, meta) },
+        body,
+      };
     } catch (error) {
       throw new Error(
         `Falha ao ler "${fileName}": ${
