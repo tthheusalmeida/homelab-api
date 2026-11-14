@@ -10,6 +10,7 @@ import { HealthAIModule } from './modules/health/ai/health-ai.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { VideoModule } from './modules/video/video.module';
 import { JobsModule } from './modules/jobs/jobs.module';
+import { LibraryModule } from './modules/library/library.module';
 
 @Module({
   imports: [
@@ -21,6 +22,8 @@ import { JobsModule } from './modules/jobs/jobs.module';
     HealthAIModule,
 
     JobsModule,
+
+    LibraryModule,
 
     ChatModule,
 
