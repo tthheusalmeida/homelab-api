@@ -11,6 +11,7 @@
 - Ollama: usa a URL de `OLLAMA_URL`. Lista via `GET /api/tags`, ordena por nome; qualquer item fora do formato esperado derruba a listagem inteira com erro.
 - Gemini: só aparecem modelos que têm preço em `gemini.pricing.ts`; o prefixo `models/` é removido; ordenado por nome.
 - Para um modelo aparecer no Gemini ele precisa ser cadastrado em `gemini.pricing.ts`.
+- `cheapestModel()` devolve o modelo cadastrado com menor entrada + saída por milhão de tokens (hoje usado pela sugestão de classificação da biblioteca).
 
 ## Thinking
 - Se o modelo suporta raciocínio, as opções são sempre `off` ("Desativado") e `on` ("Ativado"); senão, lista vazia.

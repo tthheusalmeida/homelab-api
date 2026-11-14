@@ -37,6 +37,7 @@ Fundação, armazenamento, índice, busca, operações e API. A edição de docu
 - Gravar de novo o mesmo id e título sobrescreve o arquivo. Se o título muda, o nome muda; quem altera o título é responsável por apagar o arquivo antigo.
 - Procurar por id usa só o nome do arquivo (não lê o conteúdo) e compara o id inteiro (`abc` não casa com `xabc`).
 - Ler valida o frontmatter e exige que o id do nome do arquivo seja igual ao do frontmatter; erro cita o nome do arquivo.
+- **A pasta manda na categoria:** ao ler um documento publicado ou arquivado de `LIB_DIR`, a categoria passa a ser o caminho de pastas onde o arquivo está (1 a 4 níveis válidos), mesmo que o frontmatter diga outra coisa. Assim mover o arquivo de pasta muda a categoria depois de reindexar. Arquivo direto na raiz de `LIB_DIR`, com mais de 4 níveis ou com nome de pasta inválido mantém a categoria do frontmatter; pendentes (entrada) nunca usam a pasta. O frontmatter não é reescrito: só é atualizado na próxima gravação (publicar, readicionar).
 - Apagar remove o arquivo e as pastas de categoria que ficarem vazias (nunca a raiz `LIB_DIR`). Só aceita caminhos dentro de `LIB_DIR` ou `TEMP_DOCS_DIR`.
 
 ## Índice em memória (`LibraryIndex`)
@@ -62,9 +63,16 @@ Fundação, armazenamento, índice, busca, operações e API. A edição de docu
 - **Categorias:** árvore só dos publicados, com contagem por nível (inclui os níveis abaixo), em ordem natural. **Tags:** só dos publicados, com contagem, em ordem natural.
 - Id inexistente dá 404. Categoria inválida não altera nada (o arquivo continua onde estava).
 
+## Sugestão de classificação com IA (`LibraryClassifier`)
+- `POST documents/:id/suggest` (`modelId?`) pede ao **Gemini** um título, uma categoria e tags para o documento (qualquer status). Não altera nada: o usuário revisa e só então publica.
+- Modelo: o informado; sem `modelId`, o mais barato de `gemini.pricing.ts` (menor entrada + saída por milhão de tokens). O uso entra no `usage` como qualquer chat.
+- O prompt leva o título, os primeiros 6000 caracteres do conteúdo, as categorias publicadas (caminhos `A > B`) e até 60 tags mais usadas, pedindo para **preferir** o que já existe.
+- A resposta deve ser um JSON; cercas de código ao redor são toleradas. A categoria é limitada a 4 níveis, sanitizada e, em cada nível, reaproveita a grafia da pasta existente (ignorando acento e maiúscula). Tags: minúsculas, sem duplicadas, reaproveitam a grafia das existentes, no máximo 6. Título vazio mantém o atual.
+- Falha da IA, resposta sem JSON, categoria ausente/vazia ou com nome inválido dão 502 com mensagem em português. Id inexistente dá 404 (sem chamar a IA).
+
 ## API (`/api/v1/library`)
 - `GET documents` (`q`, `category` repetido por nível, `type`, `source`, `tag` repetido, `status`, `sort`), `GET documents/:id` (meta + conteúdo), `GET inbox`, `GET categories`, `GET tags`, `GET index` (total e erros), `POST reindex`.
-- `POST documents/article` (`title`, `category[]`, `tags[]`, `content`), `POST documents/:id/publish` (`title?`, `category[]`, `tags[]?`), `POST documents/:id/archive`, `DELETE documents/:id` (204).
+- `POST documents/article` (`title`, `category[]`, `tags[]`, `content`), `POST documents/:id/publish` (`title?`, `category[]`, `tags[]?`), `POST documents/:id/suggest` (`modelId?`), `POST documents/:id/archive`, `DELETE documents/:id` (204).
 - Campos de lista (`category`, `tags`) que não sejam lista de textos dão 400.
 
 ## Pipelines de vídeo
