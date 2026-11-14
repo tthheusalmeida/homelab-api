@@ -1,5 +1,6 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 
+import type { DocumentHints } from '../domain/document-hints';
 import { Job } from '../domain/job.entity';
 import { JOB_REPOSITORY } from '../infrastructure/repositories/job.repository';
 import { type JobRepository } from '../infrastructure/repositories/job.repository';
@@ -11,8 +12,8 @@ export class JobService {
     private readonly repository: JobRepository,
   ) {}
 
-  create(name: string): Job {
-    const job = new Job(name);
+  create(name: string, documentHints?: DocumentHints): Job {
+    const job = new Job(name, documentHints);
 
     this.repository.save(job);
 

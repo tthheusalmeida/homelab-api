@@ -1,6 +1,7 @@
 import { ApiBody } from '@nestjs/swagger';
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 
+import { parseDocumentHints } from './domain/document-hints';
 import { Job } from './domain/job.entity';
 import { JobService } from './application/job.service';
 import { JobRunner } from './application/job-runner.service';
@@ -41,10 +42,13 @@ export class JobController {
 
   @ApiBody({ type: VideoToTranscriptDownloadDto })
   @Post('video-to-transcript')
-  createVideoToTranscript(@Body('url') url: string) {
-    const job = this.jobs.create('video-to-transcript');
+  createVideoToTranscript(@Body() dto: VideoToTranscriptDownloadDto) {
+    const job = this.jobs.create(
+      'video-to-transcript',
+      parseDocumentHints(dto),
+    );
 
-    void this.runner.run(job, this.videoToTranscriptProcessor, url);
+    void this.runner.run(job, this.videoToTranscriptProcessor, dto.url);
 
     return {
       id: job.id,
@@ -55,7 +59,7 @@ export class JobController {
   @ApiBody({ type: VideoToSummaryDto })
   @Post('video-to-summary')
   createVideoTranscript(@Body() dto: VideoToSummaryDto) {
-    const job = this.jobs.create('video-to-summary');
+    const job = this.jobs.create('video-to-summary', parseDocumentHints(dto));
 
     void this.runner.run(job, this.videoToSummaryProcessor, dto);
 

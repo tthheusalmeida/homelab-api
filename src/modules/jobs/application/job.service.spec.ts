@@ -21,6 +21,24 @@ describe('JobService', () => {
     expect(repository.findById(job.id)).toBe(job);
   });
 
+  it('when create is called with document hints, should keep them in the job', () => {
+    const job = service.create('video-to-summary', {
+      title: 'T',
+      category: ['A'],
+      tags: ['x'],
+    });
+
+    expect(job.documentHints).toEqual({
+      title: 'T',
+      category: ['A'],
+      tags: ['x'],
+    });
+  });
+
+  it('when create is called without hints, should have empty hints', () => {
+    expect(service.create('video-to-summary').documentHints).toEqual({});
+  });
+
   it('when create is called with an invalid type, should throw and not persist', () => {
     expect(() => service.create('invalido')).toThrow();
     expect(repository.findAll()).toHaveLength(0);

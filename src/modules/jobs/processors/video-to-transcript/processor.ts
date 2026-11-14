@@ -67,9 +67,11 @@ export class VideoToTranscriptJobProcessor implements JobProcessor<
   ): Promise<string> {
     const meta = newPendingMeta({
       id: job.id,
-      title: job.label ?? 'Transcrição de vídeo',
+      title: job.documentHints.title ?? job.label ?? 'Transcrição de vídeo',
       type: DocumentTypeOptions.TRANSCRIPTION,
       sourceUrl: videoUrl,
+      category: job.documentHints.category,
+      tags: job.documentHints.tags,
     });
 
     return job.runStep(VideoToTranscriptSteps.SAVE_FILE.name, () =>

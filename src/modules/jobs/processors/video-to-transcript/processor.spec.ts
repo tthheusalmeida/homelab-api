@@ -97,6 +97,29 @@ describe('VideoToTranscriptJobProcessor', () => {
     });
   });
 
+  it('when the job has hints, should use the title for the file and keep category and tags in the frontmatter', async () => {
+    job = new Job('video-to-transcript', {
+      title: 'Aula 3 - Containers',
+      category: ['Tecnologia', 'DevOps'],
+      tags: ['docker'],
+    });
+
+    await processor.process(job, 'http://x/v.mp4');
+
+    expect(video.saveFile).toHaveBeenCalledWith(
+      expect.any(String),
+      `aula_3_containers_${job.id}`,
+      '.md',
+    );
+    const { meta } = parseDocument(video.saveFile.mock.calls[0][0] as string);
+    expect(meta).toMatchObject({
+      title: 'Aula 3 - Containers',
+      status: 'pending',
+      category: ['Tecnologia', 'DevOps'],
+      tags: ['docker'],
+    });
+  });
+
   it('when everything succeeds, should complete all steps', async () => {
     await processor.process(job, 'http://x/v.mp4');
 

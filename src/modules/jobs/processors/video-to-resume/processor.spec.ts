@@ -103,6 +103,29 @@ describe('VideoToSummaryJobProcessor', () => {
     });
   });
 
+  it('when the job has hints, should use the title for the file and keep category and tags in the frontmatter', async () => {
+    job = new Job('video-to-summary', {
+      title: 'Práticas da Primeira Maneira',
+      category: ['Tecnologia', 'DevOps'],
+      tags: ['devops', 'ci'],
+    });
+
+    await processor.process(job, dto);
+
+    expect(video.saveFile).toHaveBeenCalledWith(
+      expect.any(String),
+      `praticas_da_primeira_maneira_${job.id}`,
+      '.md',
+    );
+    const { meta } = parseDocument(video.saveFile.mock.calls[0][0] as string);
+    expect(meta).toMatchObject({
+      title: 'Práticas da Primeira Maneira',
+      status: 'pending',
+      category: ['Tecnologia', 'DevOps'],
+      tags: ['devops', 'ci'],
+    });
+  });
+
   it('when everything succeeds, should complete all steps', async () => {
     await processor.process(job, dto);
 

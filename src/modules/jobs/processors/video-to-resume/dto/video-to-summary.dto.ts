@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { type AIProviderName } from 'src/modules/ai/ai.model';
 
 export class VideoToSummaryDto {
@@ -22,4 +22,13 @@ export class VideoToSummaryDto {
     example: 'off',
   })
   thinking?: string;
+
+  @ApiPropertyOptional({ example: 'Práticas da Primeira Maneira' })
+  title?: string;
+
+  @ApiPropertyOptional({ type: [String], example: ['Tecnologia', 'DevOps'] })
+  category?: string[];
+
+  @ApiPropertyOptional({ type: [String], example: ['devops'] })
+  tags?: string[];
 }

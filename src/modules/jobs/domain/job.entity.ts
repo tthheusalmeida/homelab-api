@@ -1,6 +1,7 @@
 import { uuidv7 } from 'uuidv7';
 import { JobStatus } from './job-status.enum';
 import { JobStep, JobTypeConfig } from '../jobs.types';
+import type { DocumentHints } from './document-hints';
 
 export class Job {
   public readonly id: string;
@@ -15,7 +16,10 @@ export class Job {
 
   private _steps: JobStep[] = [];
 
-  constructor(name: string) {
+  constructor(
+    name: string,
+    private readonly _documentHints: DocumentHints = {},
+  ) {
     const jobTypeConfig = JobTypeConfig[name as keyof typeof JobTypeConfig];
 
     if (!jobTypeConfig) {
@@ -33,6 +37,11 @@ export class Job {
       ...step,
       status: JobStatus.PENDING,
     }));
+  }
+
+  /** Título, categoria e tags opcionais para o documento que o job gera. */
+  get documentHints(): DocumentHints {
+    return this._documentHints;
   }
 
   get label(): string | undefined {

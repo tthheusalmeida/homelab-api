@@ -29,7 +29,12 @@
 
 ## Endpoints
 - `GET jobs`, `GET jobs/types`, `GET jobs/:id`.
-- `POST jobs/video-to-transcript` (body `{ url }`) e `POST jobs/video-to-summary` (body `{ url, providerId, modelId, thinking }`): criam o job, enfileiram e respondem na hora `{ id, status }` (status `pending`). O acompanhamento é por polling em `GET jobs`/`GET jobs/:id`.
+- `POST jobs/video-to-transcript` (body `{ url, title?, category?, tags? }`) e `POST jobs/video-to-summary` (body `{ url, providerId, modelId, thinking, title?, category?, tags? }`): criam o job, enfileiram e respondem na hora `{ id, status }` (status `pending`). O acompanhamento é por polling em `GET jobs`/`GET jobs/:id`.
+
+## Título, categoria e tags opcionais (`DocumentHints`)
+- Na criação do job, `title`, `category` (lista de níveis) e `tags` (lista) são opcionais e vão para o documento gerado. O `Job` guarda em `documentHints` (não aparece no JSON do job).
+- Validação **antes** de criar/enfileirar (400 se inválido): título é texto de até 120 caracteres (espaços colapsados; em branco = ausente); categoria e tags devem ser listas de textos; categoria tem níveis em branco descartados, de 1 a 4 níveis, com nomes sanitizados como pasta (vazia = ausente); tags ficam minúsculas, sem duplicadas (vazia = ausente).
+- Os processors usam o título informado no lugar do rótulo do job (e no nome do arquivo `<slug>_<jobId>.md`) e gravam categoria e tags no frontmatter, ainda como `pending`. Assim o diálogo de adicionar à biblioteca já abre preenchido.
 
 ## Processors
 - Ambos baixam o vídeo com nome `<jobId>.mp4`, convertem, apagam o vídeo, transcrevem, **normalizam** o texto e **removem a assinatura** "Legenda por Sônia Ruberti".

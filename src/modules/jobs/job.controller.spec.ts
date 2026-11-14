@@ -1,3 +1,5 @@
+import { BadRequestException } from '@nestjs/common';
+
 import { JobController } from './job.controller';
 import { JobTypeConfig } from './jobs.types';
 import { Job } from './domain/job.entity';
@@ -47,9 +49,11 @@ describe('JobController', () => {
     const job = new Job('video-to-transcript');
     jobs.create.mockReturnValue(job);
 
-    const result = controller.createVideoToTranscript('http://x/v.mp4');
+    const result = controller.createVideoToTranscript({
+      url: 'http://x/v.mp4',
+    });
 
-    expect(jobs.create).toHaveBeenCalledWith('video-to-transcript');
+    expect(jobs.create).toHaveBeenCalledWith('video-to-transcript', {});
     expect(runner.run).toHaveBeenCalledWith(
       job,
       transcriptProcessor,
@@ -70,8 +74,58 @@ describe('JobController', () => {
 
     const result = controller.createVideoTranscript(dto);
 
-    expect(jobs.create).toHaveBeenCalledWith('video-to-summary');
+    expect(jobs.create).toHaveBeenCalledWith('video-to-summary', {});
     expect(runner.run).toHaveBeenCalledWith(job, summaryProcessor, dto);
     expect(result).toEqual({ id: job.id, status: 'pending' });
+  });
+
+  it('when a transcript job has title, category and tags, should pass the normalized hints to the job', () => {
+    const job = new Job('video-to-transcript');
+    jobs.create.mockReturnValue(job);
+
+    controller.createVideoToTranscript({
+      url: 'http://x/v.mp4',
+      title: '  Aula 3 ',
+      category: ['Tecnologia', ' DevOps '],
+      tags: ['Docker', 'docker'],
+    });
+
+    expect(jobs.create).toHaveBeenCalledWith('video-to-transcript', {
+      title: 'Aula 3',
+      category: ['Tecnologia', 'DevOps'],
+      tags: ['docker'],
+    });
+  });
+
+  it('when a summary job has title, category and tags, should pass the normalized hints to the job', () => {
+    const job = new Job('video-to-summary');
+    jobs.create.mockReturnValue(job);
+
+    controller.createVideoTranscript({
+      url: 'http://x/v.mp4',
+      providerId: 'gemini',
+      modelId: 'm',
+      thinking: 'off',
+      title: 'Resumo X',
+      category: ['A'],
+      tags: ['t'],
+    });
+
+    expect(jobs.create).toHaveBeenCalledWith('video-to-summary', {
+      title: 'Resumo X',
+      category: ['A'],
+      tags: ['t'],
+    });
+  });
+
+  it('when the category is invalid, should reject with BadRequestException and not create or enqueue the job', () => {
+    expect(() =>
+      controller.createVideoToTranscript({
+        url: 'http://x/v.mp4',
+        category: ['a', 'b', 'c', 'd', 'e'],
+      }),
+    ).toThrow(BadRequestException);
+    expect(jobs.create).not.toHaveBeenCalled();
+    expect(runner.run).not.toHaveBeenCalled();
   });
 });

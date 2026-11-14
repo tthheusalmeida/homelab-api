@@ -94,9 +94,11 @@ export class VideoToSummaryJobProcessor implements JobProcessor<
   ): Promise<string> {
     const meta = newPendingMeta({
       id: job.id,
-      title: job.label ?? 'Resumo de vídeo',
+      title: job.documentHints.title ?? job.label ?? 'Resumo de vídeo',
       type: DocumentTypeOptions.SUMMARY,
       sourceUrl: videoUrl,
+      category: job.documentHints.category,
+      tags: job.documentHints.tags,
     });
 
     return job.runStep(VideoToResumeSteps.SAVE_FILE.name, () =>

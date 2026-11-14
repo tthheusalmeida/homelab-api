@@ -17,6 +17,17 @@ describe('Job', () => {
       expect(job.error).toBeUndefined();
     });
 
+    it('when a job is created without hints, should have empty document hints', () => {
+      expect(newJob().documentHints).toEqual({});
+    });
+
+    it('when a job is created with hints, should expose them but not serialize them', () => {
+      const job = new Job('video-to-transcript', { title: 'T' });
+
+      expect(job.documentHints).toEqual({ title: 'T' });
+      expect(job.toJSON()).not.toHaveProperty('documentHints');
+    });
+
     it('when a job is created, should copy label and steps from its type, all PENDING', () => {
       const job = newJob();
       const config = JobTypeConfig['video-to-transcript'];
