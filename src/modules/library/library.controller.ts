@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   Param,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
@@ -26,6 +27,7 @@ import {
   LibraryQueryDto,
   PublishDocumentDto,
   SuggestDocumentDto,
+  UpdateDocumentDto,
   optionalStringList,
   requireStringList,
   toList,
@@ -101,6 +103,19 @@ export class LibraryController {
       title: body.title,
       category: requireStringList(body.category, 'category'),
       tags: optionalStringList(body.tags, 'tags'),
+    });
+  }
+
+  @Patch('documents/:id')
+  update(
+    @Param('id') id: string,
+    @Body() body: UpdateDocumentDto,
+  ): Promise<DocumentDetail> {
+    return this.library.update(id, {
+      title: body.title,
+      category: optionalStringList(body.category, 'category'),
+      tags: optionalStringList(body.tags, 'tags'),
+      content: body.content,
     });
   }
 

@@ -42,6 +42,13 @@ export interface PublishInput {
   tags?: string[];
 }
 
+export interface UpdateInput {
+  title?: string;
+  category?: string[];
+  tags?: string[];
+  content?: string;
+}
+
 export interface ArticleInput {
   title: string;
   category: string[];
@@ -160,6 +167,48 @@ export class LibraryService implements OnModuleInit {
     await this.persist(meta, body, indexed.path);
 
     return { meta, content: body };
+  }
+
+  /**
+   * Edita um documento que está na biblioteca. Só os campos informados mudam;
+   * trocar título ou categoria renomeia/move o arquivo (o antigo só é apagado
+   * depois de gravar o novo).
+   */
+  async update(id: string, input: UpdateInput): Promise<DocumentDetail> {
+    const indexed = this.find(id);
+
+    if (indexed.meta.status !== DocumentStatusOptions.PUBLISHED) {
+      throw new BadRequestException(
+        'Só é possível editar um documento que está na biblioteca.',
+      );
+    }
+
+    if (
+      input.content !== undefined &&
+      (typeof input.content !== 'string' || input.content.trim() === '')
+    ) {
+      throw new BadRequestException('O conteúdo não pode ficar vazio.');
+    }
+
+    const { meta: current, body } = await this.storage.read(indexed.path);
+
+    const meta: DocumentMeta = {
+      ...current,
+      title:
+        input.title === undefined ? current.title : cleanTitle(input.title),
+      category:
+        input.category === undefined
+          ? current.category
+          : sanitizeCategoryPath(input.category),
+      tags: normalizeTags(input.tags ?? current.tags),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const newBody = input.content ?? body;
+
+    await this.persist(meta, newBody, indexed.path);
+
+    return { meta, content: newBody.trim() };
   }
 
   /**

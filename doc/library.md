@@ -1,6 +1,6 @@
 # Biblioteca (modules/library)
 
-Fundação, armazenamento, índice, busca, operações e API. A edição de documentos publicados virá numa próxima entrega.
+Fundação, armazenamento, índice, busca, operações e API.
 
 ## Documentos
 - Todo conteúdo gerado ou escrito é um arquivo **Markdown (`.md`) com frontmatter YAML**. Não se usa mais `.txt`.
@@ -57,6 +57,7 @@ Fundação, armazenamento, índice, busca, operações e API. A edição de docu
 ## Operações (`LibraryService`)
 - **Entrada:** documentos `pending` do mais recente ao mais antigo.
 - **Adicionar (`publish`):** vale para pendente ou arquivado. Define título (opcional, mantém o atual), categoria (1 a 4 níveis, obrigatória) e tags (opcionais, mantém as atuais). Move o arquivo para a pasta da categoria, apaga o antigo só depois de gravar o novo e atualiza `updatedAt`. Documento já publicado dá 400.
+- **Editar (`update`):** só de documento **publicado** (pendente/arquivado dá 400). Campos opcionais: `title`, `category` (1 a 4 níveis), `tags` e `content`; o que não vier mantém o valor atual. Conteúdo ou título em branco dá 400. Trocar título renomeia o arquivo e trocar categoria move para a nova pasta; o arquivo antigo (e pastas que ficarem vazias) só é apagado depois de gravar o novo, e categoria inválida não altera nada. Atualiza `updatedAt` e mantém `createdAt`, tipo, origem e `sourceUrl`.
 - **Remover da biblioteca (`archive`):** só de publicado. Remoção lógica: `status: archived`, o arquivo continua em `lib/` e some da biblioteca, da árvore de categorias e das tags. Pode ser readicionado.
 - **Descartar (`discard`):** apaga o arquivo de verdade, só de pendente ou arquivado. Publicado dá 400 ("remova da biblioteca antes").
 - **Criar artigo:** título e conteúdo obrigatórios, categoria de 1 a 4 níveis. Nasce publicado, `type: article`, `source: manual`, id uuidv7.
@@ -72,9 +73,9 @@ Fundação, armazenamento, índice, busca, operações e API. A edição de docu
 
 ## API (`/api/v1/library`)
 - `GET documents` (`q`, `category` repetido por nível, `type`, `source`, `tag` repetido, `status`, `sort`), `GET documents/:id` (meta + conteúdo), `GET inbox`, `GET categories`, `GET tags`, `GET index` (total e erros), `POST reindex`.
-- `POST documents/article` (`title`, `category[]`, `tags[]`, `content`), `POST documents/:id/publish` (`title?`, `category[]`, `tags[]?`), `POST documents/:id/suggest` (`modelId?`), `POST documents/:id/archive`, `DELETE documents/:id` (204).
+- `POST documents/article` (`title`, `category[]`, `tags[]`, `content`), `POST documents/:id/publish` (`title?`, `category[]`, `tags[]?`), `PATCH documents/:id` (`title?`, `category[]?`, `tags[]?`, `content?`), `POST documents/:id/suggest` (`modelId?`), `POST documents/:id/archive`, `DELETE documents/:id` (204).
 - Campos de lista (`category`, `tags`) que não sejam lista de textos dão 400.
 
 ## Pipelines de vídeo
 - Resumo e transcrição gravam, em `TEMP_DOCS_DIR`, `<slug>_<jobId>.md` com frontmatter `status: pending`, `source: video`, `sourceUrl` com a URL do vídeo e o texto como corpo.
-- Título padrão: o rótulo do job ("Resumo de vídeo" / "Transcrição de vídeo"); o usuário poderá ajustar ao adicionar à biblioteca.
+- Título padrão: o rótulo do job ("Resumo de vídeo" / "Transcrição de vídeo"), a menos que o job tenha recebido título; categoria e tags informadas na criação do job (ver `doc/jobs.md`) também vão no frontmatter pendente. O usuário ajusta tudo ao adicionar à biblioteca.

@@ -51,6 +51,20 @@ export class PublishDocumentDto {
   tags?: string[];
 }
 
+export class UpdateDocumentDto {
+  @ApiPropertyOptional({ example: 'Novo título' })
+  title?: string;
+
+  @ApiPropertyOptional({ type: [String], example: ['Química', 'Ligações'] })
+  category?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  tags?: string[];
+
+  @ApiPropertyOptional({ example: '# Título\n\nTexto em Markdown' })
+  content?: string;
+}
+
 export class SuggestDocumentDto {
   @ApiPropertyOptional({
     example: 'gemini-3.1-flash-lite',

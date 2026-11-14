@@ -239,6 +239,138 @@ describe('LibraryService', () => {
     });
   });
 
+  describe('update', () => {
+    const publishedId = async () => {
+      await seedPending();
+      await service.publish('job1', publishInput);
+
+      return 'job1';
+    };
+
+    it('when only the content changes, should rewrite the body and keep title, category and tags', async () => {
+      const id = await publishedId();
+
+      const result = await service.update(id, { content: '# Novo\n\ntexto' });
+
+      expect(result.content).toBe('# Novo\n\ntexto');
+      expect(result.meta).toMatchObject({
+        title: 'Práticas da Primeira Maneira',
+        category: ['Ciência da Computação', 'DevOps'],
+        tags: ['devops', 'engenharia'],
+        status: 'published',
+      });
+      expect((await service.get(id)).content).toBe('# Novo\n\ntexto\n');
+    });
+
+    it('when the category changes, should move the file and remove the old one and empty folders', async () => {
+      const id = await publishedId();
+      const oldPath = index.get(id)!.path;
+
+      await service.update(id, { category: ['Estudos', 'Docker'] });
+
+      const newPath = index.get(id)!.path;
+
+      expect(newPath).toBe(
+        path.join(tmp.lib, 'Estudos', 'Docker', path.basename(oldPath)),
+      );
+      expect(fs.existsSync(newPath)).toBe(true);
+      expect(fs.existsSync(oldPath)).toBe(false);
+      expect(fs.existsSync(path.join(tmp.lib, 'Ciência da Computação'))).toBe(
+        false,
+      );
+      expect(index.get(id)!.meta.category).toEqual(['Estudos', 'Docker']);
+    });
+
+    it('when the title changes, should rename the file and keep a single copy', async () => {
+      const id = await publishedId();
+      const oldPath = index.get(id)!.path;
+
+      await service.update(id, { title: '  Outro Título ' });
+
+      const newPath = index.get(id)!.path;
+
+      expect(path.basename(newPath)).toBe('outro_titulo_job1.md');
+      expect(fs.existsSync(oldPath)).toBe(false);
+      expect((await service.get(id)).meta.title).toBe('Outro Título');
+    });
+
+    it('when tags are given, should normalize them; when omitted, should keep the current ones', async () => {
+      const id = await publishedId();
+
+      await service.update(id, { tags: ['  Nova ', 'nova', 'Outra'] });
+      expect(index.get(id)!.meta.tags).toEqual(['nova', 'outra']);
+
+      await service.update(id, { content: 'x' });
+      expect(index.get(id)!.meta.tags).toEqual(['nova', 'outra']);
+    });
+
+    it('when updating, should refresh updatedAt and keep createdAt', async () => {
+      const id = await publishedId();
+      const before = index.get(id)!.meta;
+
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      const { meta } = await service.update(id, { content: 'x' });
+
+      expect(meta.createdAt).toBe(before.createdAt);
+      expect(meta.updatedAt > before.updatedAt).toBe(true);
+    });
+
+    it('when the document is not published, should throw BadRequestException and change nothing', async () => {
+      const file = await seedPending();
+
+      await expect(
+        service.update('job1', { title: 'X' }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(fs.existsSync(file)).toBe(true);
+    });
+
+    it('when the document is archived, should throw BadRequestException', async () => {
+      const id = await publishedId();
+      await service.archive(id);
+
+      await expect(service.update(id, { title: 'X' })).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+
+    it('when the id does not exist, should throw NotFoundException', async () => {
+      await expect(
+        service.update('nope', { title: 'X' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('when the content is blank, should throw BadRequestException and keep the old content', async () => {
+      const id = await publishedId();
+
+      await expect(
+        service.update(id, { content: '   ' }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect((await service.get(id)).content).toContain('Texto do resumo');
+    });
+
+    it('when the title is blank, should throw BadRequestException', async () => {
+      const id = await publishedId();
+
+      await expect(service.update(id, { title: '  ' })).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+
+    it('when the category is invalid, should throw and leave the file where it was', async () => {
+      const id = await publishedId();
+      const oldPath = index.get(id)!.path;
+
+      await expect(
+        service.update(id, { category: ['a', 'b', 'c', 'd', 'e'] }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      await expect(service.update(id, { category: [] })).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+      expect(fs.existsSync(oldPath)).toBe(true);
+      expect(index.get(id)!.path).toBe(oldPath);
+    });
+  });
+
   describe('archive (logical removal)', () => {
     it('when archiving a published document, should keep the file in the lib but hide it from the library', async () => {
       await seedPending();

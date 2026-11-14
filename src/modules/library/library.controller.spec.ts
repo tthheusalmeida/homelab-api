@@ -15,6 +15,7 @@ describe('LibraryController', () => {
     | 'createArticle'
     | 'get'
     | 'publish'
+    | 'update'
     | 'archive'
     | 'discard',
     jest.Mock
@@ -33,6 +34,7 @@ describe('LibraryController', () => {
       createArticle: jest.fn().mockResolvedValue('article'),
       get: jest.fn().mockResolvedValue('doc'),
       publish: jest.fn().mockResolvedValue('published'),
+      update: jest.fn().mockResolvedValue('updated'),
       archive: jest.fn().mockResolvedValue('archived'),
       discard: jest.fn().mockResolvedValue(undefined),
     };
@@ -41,6 +43,45 @@ describe('LibraryController', () => {
       service as unknown as LibraryService,
       classifier as unknown as LibraryClassifier,
     );
+  });
+
+  describe('update', () => {
+    it('when the body is valid, should pass only the given fields to the service', async () => {
+      await controller.update('x', {
+        title: 'T',
+        category: ['A'],
+        tags: ['t'],
+        content: 'c',
+      });
+
+      expect(service.update).toHaveBeenCalledWith('x', {
+        title: 'T',
+        category: ['A'],
+        tags: ['t'],
+        content: 'c',
+      });
+    });
+
+    it('when the body is empty, should send every field as undefined', async () => {
+      await controller.update('x', {});
+
+      expect(service.update).toHaveBeenCalledWith('x', {
+        title: undefined,
+        category: undefined,
+        tags: undefined,
+        content: undefined,
+      });
+    });
+
+    it('when category or tags are not lists of texts, should throw BadRequestException', () => {
+      expect(() =>
+        controller.update('x', { category: 'A' as unknown as string[] }),
+      ).toThrow(BadRequestException);
+      expect(() =>
+        controller.update('x', { tags: [1] as unknown as string[] }),
+      ).toThrow(BadRequestException);
+      expect(service.update).not.toHaveBeenCalled();
+    });
   });
 
   describe('suggest', () => {
