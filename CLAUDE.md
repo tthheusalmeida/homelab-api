@@ -33,7 +33,8 @@ API NestJS 11 (TypeScript) do HomeLab. Prefixo global: `api/v1`. Porta: `PORT` o
 - Imports absolutos via `src/...` (Jest mapeia em `moduleNameMapper`).
 - Mensagens de erro e labels de usuário em **português**.
 - Estado é **em memória** (jobs e usage somem ao reiniciar). Não há banco.
-- Caminhos de arquivo/binários são fixos no código (`D:/homelab/...`): `temp/video`, `temp/audio`, `temp/txt`, `ai/whisper`.
+- **Todo caminho de pasta/arquivo, URL de serviço e porta vem de variável de ambiente (`.env`), nunca fixo no código** (ex.: `LIB_DIR`). Código novo lê da config central e o `.env.example` lista as variáveis. Em testes, injete a pasta (use pasta temporária do SO).
+- Pendente de migração para `.env` (hoje fixos no código): `D:/homelab/temp/{video,audio,txt}`, `D:/homelab/ai/whisper`, `http://localhost:11434` (Ollama) e a origem do CORS. A migração será feita junto da biblioteca.
 - `GEMINI_API_KEY` é obrigatória: sem ela a API não sobe (o `GeminiProvider` lança no construtor).
 - Dependências externas necessárias: `ffmpeg` no PATH, Ollama em `localhost:11434`, `whisper-cli.exe` + modelo em `D:/homelab/ai/whisper`.
 
