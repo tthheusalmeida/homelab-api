@@ -38,6 +38,7 @@ API NestJS 11 (TypeScript) do HomeLab. Prefixo global: `api/v1`. Porta: `PORT` o
 - Dependências externas necessárias: `ffmpeg` no PATH, Ollama em `localhost:11434`, `whisper-cli.exe` + modelo em `D:/homelab/ai/whisper`.
 
 ## Regras para testes (OBRIGATÓRIO)
+- **Toda feature (nova ou alterada) deve vir acompanhada de testes unitários na mesma entrega.** Uma feature sem testes não é considerada concluída; cubra o caminho feliz, os erros e os casos de borda das regras novas.
 - Todo código novo ou alterado precisa de teste unitário `*.spec.ts` ao lado do arquivo.
 - **Nome de cada teste: `when <situação>, should <resultado>`** (ex.: `it('when the id does not exist, should return null')`).
 - Se uma mudança quebrar um teste existente, decida se é regressão (corrija o código) ou mudança de regra (atualize teste **e** `doc/`).

@@ -5,6 +5,9 @@
 - Rodar: `npm test` (tudo), `npx jest caminho/arquivo.spec.ts` (um), `npm run test:cov` (cobertura).
 - Cada arquivo `x.ts` tem `x.spec.ts` ao lado. Controllers/health/chat agrupados em um spec por módulo quando pequenos.
 
+## Regra de entrega
+Toda feature (nova ou alterada) deve vir acompanhada de testes unitários na mesma entrega. Feature sem testes não está concluída. Cubra o caminho feliz, os erros e os casos de borda, e rode a suíte completa antes de finalizar.
+
 ## Padrão de nome (obrigatório)
 `it('when <situação>, should <resultado>', ...)`. `describe` agrupa por classe/método.
 
