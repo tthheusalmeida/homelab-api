@@ -365,7 +365,7 @@ describe('BookService', () => {
       expect(chapter).toMatchObject({
         documentId: a,
         available: false,
-        title: 'Documento indisponível',
+        title: 'Página indisponível',
       });
     });
   });

@@ -387,7 +387,7 @@ export class BookService {
 
           return {
             documentId,
-            title: available ? indexed.meta.title : 'Documento indisponível',
+            title: available ? indexed.meta.title : 'Página indisponível',
             category: available ? indexed.meta.category : [],
             available,
           };
