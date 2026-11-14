@@ -1,6 +1,7 @@
 # Testes (back)
 
 - Framework: Jest + ts-jest. Config no `package.json` (`rootDir: src`, `testRegex: .*\.spec\.ts$`).
+- Serviços que usam variáveis de ambiente recebem `AppConfig`; nos testes injete `{ get: (key) => valores[key] }`.
 - Imports `src/...` funcionam nos testes via `moduleNameMapper`.
 - Rodar: `npm test` (tudo), `npx jest caminho/arquivo.spec.ts` (um), `npm run test:cov` (cobertura).
 - Cada arquivo `x.ts` tem `x.spec.ts` ao lado. Controllers/health/chat agrupados em um spec por módulo quando pequenos.

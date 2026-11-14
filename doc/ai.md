@@ -8,7 +8,7 @@
 ## Modelos
 - Com provider informado, cada modelo ganha `id` (igual ao nome) e `label` (cada palavra separada por hífen vira capitalizada, hífen vira espaço; ex.: `gemini-3.5-flash` → "Gemini 3.5 Flash").
 - Sem provider, devolve a junção dos modelos de todos os providers, sem `id`/`label`.
-- Ollama: lista via `GET /api/tags`, ordena por nome; qualquer item fora do formato esperado derruba a listagem inteira com erro.
+- Ollama: usa a URL de `OLLAMA_URL`. Lista via `GET /api/tags`, ordena por nome; qualquer item fora do formato esperado derruba a listagem inteira com erro.
 - Gemini: só aparecem modelos que têm preço em `gemini.pricing.ts`; o prefixo `models/` é removido; ordenado por nome.
 - Para um modelo aparecer no Gemini ele precisa ser cadastrado em `gemini.pricing.ts`.
 

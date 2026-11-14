@@ -4,21 +4,21 @@
 - Aceita http e https. Segue redirecionamentos 3xx; o `Location` pode ser absoluto ou relativo (resolvido contra a URL atual).
 - Status diferente de 200 rejeita com "Falha ao baixar. Status Code: N" e apaga o arquivo parcial.
 - Erro de rede/escrita rejeita com mensagem específica e apaga o arquivo parcial.
-- Destino padrão: `D:/homelab/temp/video`; a pasta é criada se não existir.
+- Destino padrão: `TEMP_VIDEO_DIR`; a pasta é criada se não existir.
 
 ## Conversão para áudio
 - Usa `ffmpeg` (precisa estar no PATH): sem vídeo, mono, 16 kHz, WAV PCM 16 bits.
-- O áudio tem o mesmo nome do vídeo com extensão `.wav`, em `D:/homelab/temp/audio`.
+- O áudio tem o mesmo nome do vídeo com extensão `.wav`, em `TEMP_AUDIO_DIR`.
 - Falha vira "Falha ao converter o vídeo para áudio".
 
 ## Transcrição (Whisper)
-- Usa `whisper-cli.exe` e o modelo `ggml-large-v3-turbo.bin` em `D:/homelab/ai/whisper`, idioma `pt`.
+- Usa o executável `WHISPER_EXECUTABLE` e o modelo `WHISPER_MODEL`, ambos em `WHISPER_DIR`, idioma `pt`.
 - Valida antes: executável, modelo e arquivo de áudio devem existir; senão erro específico e o whisper não roda.
 - Lê o `.txt` gerado, devolve o texto sem espaços nas pontas e **sempre** tenta apagar o `.txt` (falha ao apagar é ignorada).
 - Falha do whisper vira "Falha ao transcrever o áudio".
 
 ## Salvar arquivo
-- Grava `nome + extensão` em UTF-8 (padrão `D:/homelab/temp/txt`), criando a pasta; devolve o caminho.
+- Grava `nome + extensão` em UTF-8; a extensão padrão é `.md` e a pasta padrão é `TEMP_DOCS_DIR` (criada se não existir); devolve o caminho.
 
 ## Resumo
 - Monta o prompt (`SummarySpecialistPrompt`) seguido da transcrição e envia ao `AIService.chat`.

@@ -33,5 +33,5 @@
 
 ## Processors
 - Ambos baixam o vídeo com nome `<jobId>.mp4`, convertem, apagam o vídeo, transcrevem, **normalizam** o texto e **removem a assinatura** "Legenda por Sônia Ruberti".
-- Transcrição salva `<jobId>.txt`; resumo salva `<jobId>.md`.
+- Ambos salvam `<slug>_<jobId>.md` em `TEMP_DOCS_DIR`, com frontmatter (`type` transcription ou summary, `status: pending`, `sourceUrl`). Ver `doc/library.md`.
 - O áudio só é apagado ao final com sucesso; se algo falhar antes, os temporários ficam no disco.

@@ -9,6 +9,8 @@ API NestJS 11 (TypeScript) do HomeLab. Prefixo global: `api/v1`. Porta: `PORT` o
 |---|---|
 | `doc/ai.md` | Providers (Ollama/Gemini), modelos, thinking, custo, uso (usage) |
 | `doc/jobs.md` | Job, ciclo de vida, etapas, fila (runner), pipelines |
+| `doc/library.md` | Biblioteca: documentos .md, frontmatter, nomes `<slug>_<id>.md`, categorias, ciclo pending/published/archived |
+| `doc/env.md` | Variáveis de ambiente obrigatórias (`.env`) |
 | `doc/video.md` | Download, conversão para áudio, Whisper, resumo, arquivos temporários |
 | `doc/chat-health.md` | Chat e health checks |
 | `doc/testing.md` | Convenções de teste e como rodar |
@@ -26,6 +28,8 @@ API NestJS 11 (TypeScript) do HomeLab. Prefixo global: `api/v1`. Porta: `PORT` o
 - `modules/chat/` — `POST chat`, delega ao `AIService`
 - `modules/health/{ai,system}` — `GET health/ai`, `GET health/system`
 - `modules/jobs/` — `domain/` (Job, status), `application/` (JobService, JobRunner), `infrastructure/repositories/` (in-memory), `processors/{video-to-transcript,video-to-resume}`, `jobs.types.ts` (tipos e pipelines)
+- `modules/library/domain/` — base da biblioteca: tipos, nomes de arquivo e categorias (`naming.ts`), frontmatter (`frontmatter.ts`), metadados (`document.ts`)
+- `config/env/` — `env.ts` (lista de variáveis), `env.validation.ts` (falha no boot se faltar), `app-config.ts` (`AppConfig`, leitura tipada)
 - `modules/video/` — `VideoService` (download, ffmpeg, salvar, resumir, apagar)
 - `utils/` — `text.ts`, `type-guards.ts`
 
@@ -34,9 +38,10 @@ API NestJS 11 (TypeScript) do HomeLab. Prefixo global: `api/v1`. Porta: `PORT` o
 - Mensagens de erro e labels de usuário em **português**.
 - Estado é **em memória** (jobs e usage somem ao reiniciar). Não há banco.
 - **Todo caminho de pasta/arquivo, URL de serviço e porta vem de variável de ambiente (`.env`), nunca fixo no código** (ex.: `LIB_DIR`). Código novo lê da config central e o `.env.example` lista as variáveis. Em testes, injete a pasta (use pasta temporária do SO).
-- Pendente de migração para `.env` (hoje fixos no código): `D:/homelab/temp/{video,audio,txt}`, `D:/homelab/ai/whisper`, `http://localhost:11434` (Ollama) e a origem do CORS. A migração será feita junto da biblioteca.
+- Toda variável obrigatória está em `doc/env.md` e em `.env.example`; a API **não sobe** se alguma faltar. Serviços leem via `AppConfig` (não use `process.env` nem `ConfigService`: o `@nestjs/config` v12 é ESM e não roda no Jest).
 - `GEMINI_API_KEY` é obrigatória: sem ela a API não sobe (o `GeminiProvider` lança no construtor).
-- Dependências externas necessárias: `ffmpeg` no PATH, Ollama em `localhost:11434`, `whisper-cli.exe` + modelo em `D:/homelab/ai/whisper`.
+- Dependências externas necessárias: `ffmpeg` no PATH, Ollama (`OLLAMA_URL`), Whisper (`WHISPER_DIR`, `WHISPER_EXECUTABLE`, `WHISPER_MODEL`).
+- Todo documento gerado é **Markdown com frontmatter YAML** (`type`: summary/transcription/article), nunca `.txt`.
 
 ## Regras para testes (OBRIGATÓRIO)
 - **Toda feature (nova ou alterada) deve vir acompanhada de testes unitários na mesma entrega.** Uma feature sem testes não é considerada concluída; cubra o caminho feliz, os erros e os casos de borda das regras novas.
