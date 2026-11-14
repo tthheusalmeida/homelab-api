@@ -33,3 +33,20 @@ export const pricing = new Map<string, GeminiModelPricing>([
     },
   ],
 ]);
+
+/** Modelo cadastrado com o menor custo (entrada + saída por milhão de tokens). */
+export function cheapestModel(): string {
+  let cheapest = '';
+  let cheapestCost = Infinity;
+
+  for (const [name, price] of pricing) {
+    const cost = price.inputPerMillionTokens + price.outputPerMillionTokens;
+
+    if (cost < cheapestCost) {
+      cheapest = name;
+      cheapestCost = cost;
+    }
+  }
+
+  return cheapest;
+}

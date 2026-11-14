@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 
+import type { LibraryClassifier } from './application/library-classifier';
 import type { LibraryService } from './application/library.service';
 import { LibraryController } from './library.controller';
 
@@ -18,6 +19,7 @@ describe('LibraryController', () => {
     | 'discard',
     jest.Mock
   >;
+  let classifier: { suggest: jest.Mock };
   let controller: LibraryController;
 
   beforeEach(() => {
@@ -34,7 +36,29 @@ describe('LibraryController', () => {
       archive: jest.fn().mockResolvedValue('archived'),
       discard: jest.fn().mockResolvedValue(undefined),
     };
-    controller = new LibraryController(service as unknown as LibraryService);
+    classifier = { suggest: jest.fn().mockResolvedValue('suggestion') };
+    controller = new LibraryController(
+      service as unknown as LibraryService,
+      classifier as unknown as LibraryClassifier,
+    );
+  });
+
+  describe('suggest', () => {
+    it('when a model is given, should pass the id and the model to the classifier', async () => {
+      await expect(
+        controller.suggest('x', { modelId: 'gemini-3.1-flash-lite' }),
+      ).resolves.toBe('suggestion');
+      expect(classifier.suggest).toHaveBeenCalledWith(
+        'x',
+        'gemini-3.1-flash-lite',
+      );
+    });
+
+    it('when the body is empty, should call the classifier without a model', async () => {
+      await controller.suggest('x', {});
+
+      expect(classifier.suggest).toHaveBeenCalledWith('x', undefined);
+    });
   });
 
   describe('list', () => {

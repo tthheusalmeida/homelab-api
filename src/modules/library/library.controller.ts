@@ -10,6 +10,10 @@ import {
 } from '@nestjs/common';
 
 import {
+  LibraryClassifier,
+  type ClassificationSuggestion,
+} from './application/library-classifier';
+import {
   LibraryService,
   type DocumentDetail,
   type IndexStatus,
@@ -21,6 +25,7 @@ import {
   CreateArticleDto,
   LibraryQueryDto,
   PublishDocumentDto,
+  SuggestDocumentDto,
   optionalStringList,
   requireStringList,
   toList,
@@ -29,7 +34,10 @@ import type { RebuildResult } from './infrastructure/library-index';
 
 @Controller('library')
 export class LibraryController {
-  constructor(private readonly library: LibraryService) {}
+  constructor(
+    private readonly library: LibraryService,
+    private readonly classifier: LibraryClassifier,
+  ) {}
 
   @Get('documents')
   list(@Query() query: LibraryQueryDto): Promise<DocumentSummary[]> {
@@ -94,6 +102,14 @@ export class LibraryController {
       category: requireStringList(body.category, 'category'),
       tags: optionalStringList(body.tags, 'tags'),
     });
+  }
+
+  @Post('documents/:id/suggest')
+  suggest(
+    @Param('id') id: string,
+    @Body() body: SuggestDocumentDto,
+  ): Promise<ClassificationSuggestion> {
+    return this.classifier.suggest(id, body?.modelId);
   }
 
   @Post('documents/:id/archive')

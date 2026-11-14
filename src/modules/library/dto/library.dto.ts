@@ -51,6 +51,14 @@ export class PublishDocumentDto {
   tags?: string[];
 }
 
+export class SuggestDocumentDto {
+  @ApiPropertyOptional({
+    example: 'gemini-3.1-flash-lite',
+    description: 'Modelo do Gemini; sem ele usa o mais barato cadastrado',
+  })
+  modelId?: string;
+}
+
 export class CreateArticleDto {
   @ApiProperty({ example: 'Ligações Peptídicas' })
   title!: string;
