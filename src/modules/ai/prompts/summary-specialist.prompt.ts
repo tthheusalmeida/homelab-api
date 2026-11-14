@@ -278,3 +278,91 @@ e não:
 ### Conteúdo a ser resumido:
 
 `;
+
+export const SUMMARY_DETAILS = ['brief', 'detailed', 'study'] as const;
+
+export type SummaryDetail = (typeof SUMMARY_DETAILS)[number];
+
+/** Padrão dos novos resumos: aulas pedem mais detalhe que o resumo curto. */
+export const DEFAULT_SUMMARY_DETAIL: SummaryDetail = 'detailed';
+
+export function isSummaryDetail(value: unknown): value is SummaryDetail {
+  return SUMMARY_DETAILS.includes(value as SummaryDetail);
+}
+
+const DETAIL_START = '# NÍVEL DE DETALHE';
+const DETAIL_END = '# PROCESSOS, ETAPAS E COMPARAÇÕES';
+
+const DETAILED_SECTION = `# NÍVEL DE DETALHE
+
+O resumo deve ser **detalhado**: preserve a maior parte do conteúdo relevante da fonte, reduzindo apenas a forma.
+
+Preserve:
+
+- todos os conceitos, definições e termos técnicos apresentados;
+- explicações, motivos e exemplos dados na fonte;
+- comandos, nomes de ferramentas, parâmetros, valores e números citados;
+- sequências, comparações e recomendações.
+
+Remova somente:
+
+- repetições;
+- vícios de linguagem;
+- interrupções, saudações e conversas fora do assunto.
+
+Prefira incluir uma informação relevante a omiti-la. O resumo pode ser longo, acompanhando a extensão e a riqueza do conteúdo.
+
+Não adicione informações para tornar o conteúdo mais didático, completo ou sofisticado.
+
+`;
+
+const STUDY_SECTION = `# NÍVEL DE DETALHE
+
+O resumo é um **material de estudo e de consulta**, quase completo: deve permitir estudar o assunto sem rever o conteúdo original.
+
+Preserve, sem comprimir:
+
+- todos os conceitos, definições e termos técnicos, com a explicação dada na fonte;
+- exemplos, analogias e casos citados;
+- comandos, trechos de código, nomes de ferramentas, parâmetros, valores e números;
+- passo a passo, sequências, comparações, prós e contras;
+- avisos, recomendações e pontos de atenção do professor.
+
+Remova somente repetições, vícios de linguagem, interrupções e conversas fora do assunto.
+
+Prefira sempre incluir a omitir. O resumo pode ser longo e deve acompanhar a extensão do conteúdo.
+
+Não adicione informações para tornar o conteúdo mais didático, completo ou sofisticado.
+
+# ESTRUTURA DE ESTUDO
+
+Organize o material, **somente com o que existir na fonte**, nos agrupamentos abaixo. Omita qualquer agrupamento que a fonte não tenha:
+
+- **Conceitos-chave:** definições e ideias centrais;
+- **Passo a passo e processos:** sequências na ordem apresentada;
+- **Comandos e exemplos:** comandos, código e exemplos, em blocos de código quando for código;
+- **Pontos de atenção:** avisos, erros comuns e recomendações;
+- **Para revisar:** lista curta com as ideias principais da fonte, sem ideias novas.
+
+Quando a aula tiver vários assuntos, use uma seção \`##\` por assunto e aplique os agrupamentos dentro de cada uma.
+
+`;
+
+/**
+ * Prompt de resumo para o nível de detalhe escolhido. `brief` mantém o prompt
+ * original (curto); os outros trocam só a seção "NÍVEL DE DETALHE".
+ */
+export function buildSummaryPrompt(detail: SummaryDetail): string {
+  if (detail === 'brief') {
+    return SummarySpecialistPrompt;
+  }
+
+  const start = SummarySpecialistPrompt.indexOf(DETAIL_START);
+  const end = SummarySpecialistPrompt.indexOf(DETAIL_END);
+
+  return (
+    SummarySpecialistPrompt.slice(0, start) +
+    (detail === 'study' ? STUDY_SECTION : DETAILED_SECTION) +
+    SummarySpecialistPrompt.slice(end)
+  );
+}

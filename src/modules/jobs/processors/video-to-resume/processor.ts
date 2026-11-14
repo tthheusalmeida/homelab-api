@@ -6,7 +6,11 @@ import { JobProcessor } from '../../domain/job-processor.interface';
 import { normalizeText, removeAllegedAuthorship } from 'src/utils/text';
 import { VideoToSummaryDto } from './dto/video-to-summary.dto';
 
-import { SummarySpecialistPrompt } from '../../../ai/prompts/summary-specialist.prompt';
+import {
+  buildSummaryPrompt,
+  DEFAULT_SUMMARY_DETAIL,
+  isSummaryDetail,
+} from '../../../ai/prompts/summary-specialist.prompt';
 import { WhisperService } from 'src/modules/ai/whisper/whisper.service';
 import {
   VideoService,
@@ -39,10 +43,14 @@ export class VideoToSummaryJobProcessor implements JobProcessor<
     const transcription = removeAllegedAuthorship(
       normalizeText(rawTranscription),
     );
+    const detail = isSummaryDetail(input.detail)
+      ? input.detail
+      : DEFAULT_SUMMARY_DETAIL;
     const summary = await this.summarize(job, transcription, {
       providerId: input.providerId,
       modelId: input.modelId,
       thinking: input.thinking,
+      detail,
     });
 
     await this.saveFile(job, summary, input.url);
@@ -80,7 +88,7 @@ export class VideoToSummaryJobProcessor implements JobProcessor<
   ): Promise<string> {
     return job.runStep(VideoToResumeSteps.SUMMARIZE.name, () =>
       this.videoService.summarize(
-        SummarySpecialistPrompt,
+        buildSummaryPrompt(options.detail ?? DEFAULT_SUMMARY_DETAIL),
         transcription,
         options,
       ),

@@ -230,6 +230,58 @@ describe('VideoService', () => {
       expect(chat.mock.calls[0][0]).toMatchObject({ thinking: 'on' });
     });
 
+    it('when the detail is brief, should send the whole transcript in one call', async () => {
+      chat.mockResolvedValue('r');
+      const long = 'Frase longa. '.repeat(3000);
+
+      await service.summarize('p', long, {
+        providerId: 'gemini',
+        modelId: 'm',
+        detail: 'brief',
+      });
+
+      expect(chat).toHaveBeenCalledTimes(1);
+    });
+
+    it('when the detail is not brief and the transcript is short, should call once without part notes', async () => {
+      chat.mockResolvedValue('r');
+
+      await service.summarize('p', 'curta.', {
+        providerId: 'gemini',
+        modelId: 'm',
+        detail: 'detailed',
+      });
+
+      expect(chat).toHaveBeenCalledTimes(1);
+      expect(
+        (chat.mock.calls[0][0] as { message: string }).message,
+      ).not.toContain('parte 1 de');
+    });
+
+    it('when a detailed transcript is long, should summarize it in parts and join them', async () => {
+      chat
+        .mockResolvedValueOnce('# Aula\n\n## A')
+        .mockResolvedValueOnce('## B');
+      const long = 'Frase longa. '.repeat(1500);
+
+      const result = await service.summarize('p', long, {
+        providerId: 'gemini',
+        modelId: 'm',
+        detail: 'study',
+      });
+
+      expect(chat).toHaveBeenCalledTimes(2);
+      expect(result).toBe('# Aula\n\n## A\n\n## B');
+
+      const first = (chat.mock.calls[0][0] as { message: string }).message;
+      const second = (chat.mock.calls[1][0] as { message: string }).message;
+
+      expect(first).toContain('parte 1 de 2');
+      expect(first).not.toContain('Não repita o título principal');
+      expect(second).toContain('parte 2 de 2');
+      expect(second).toContain('Não repita o título principal');
+    });
+
     it('when chat fails, should throw a summary error', async () => {
       jest.spyOn(console, 'log').mockImplementation(() => {});
       chat.mockRejectedValue(new Error('x'));

@@ -2,7 +2,7 @@ import { VideoToSummaryJobProcessor } from './processor';
 import { Job } from '../../domain/job.entity';
 import { parseDocument } from 'src/modules/library/domain/frontmatter';
 import { JobStatus } from '../../domain/job-status.enum';
-import { SummarySpecialistPrompt } from '../../../ai/prompts/summary-specialist.prompt';
+import { buildSummaryPrompt } from '../../../ai/prompts/summary-specialist.prompt';
 import type { VideoService } from 'src/modules/video/video.service';
 import type { WhisperService } from 'src/modules/ai/whisper/whisper.service';
 
@@ -67,13 +67,44 @@ describe('VideoToSummaryJobProcessor', () => {
     ]);
   });
 
-  it('when summarizing, should send the specialist prompt, normalized transcript and chosen model', async () => {
+  it('when no detail is given, should summarize with the detailed prompt, normalized transcript and chosen model', async () => {
     await processor.process(job, dto);
 
     expect(video.summarize).toHaveBeenCalledWith(
-      SummarySpecialistPrompt,
+      buildSummaryPrompt('detailed'),
       'fala crua',
-      { providerId: 'ollama', modelId: 'qwen3.5:8b', thinking: 'on' },
+      {
+        providerId: 'ollama',
+        modelId: 'qwen3.5:8b',
+        thinking: 'on',
+        detail: 'detailed',
+      },
+    );
+  });
+
+  it.each(['brief', 'study'] as const)(
+    'when the detail is %s, should use the prompt of that level',
+    async (detail) => {
+      await processor.process(job, { ...dto, detail });
+
+      expect(video.summarize).toHaveBeenCalledWith(
+        buildSummaryPrompt(detail),
+        'fala crua',
+        expect.objectContaining({ detail }),
+      );
+    },
+  );
+
+  it('when the detail is invalid, should fall back to detailed', async () => {
+    await processor.process(job, {
+      ...dto,
+      detail: 'enorme' as unknown as 'brief',
+    });
+
+    expect(video.summarize).toHaveBeenCalledWith(
+      buildSummaryPrompt('detailed'),
+      'fala crua',
+      expect.objectContaining({ detail: 'detailed' }),
     );
   });
 

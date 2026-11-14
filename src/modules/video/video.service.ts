@@ -8,6 +8,8 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
 import { AIProviderName } from '../ai/ai.model';
+import { SummaryDetail } from '../ai/prompts/summary-specialist.prompt';
+import { splitText } from '../../utils/text';
 import { AIService } from '../ai/ai.service';
 import { EnvKeys } from '../../config/env/env';
 import { AppConfig } from '../../config/env/app-config';
@@ -18,7 +20,12 @@ export interface VideoSummarizeOptions {
   providerId: AIProviderName;
   modelId: string;
   thinking?: string;
+  /** Qualquer valor diferente de brief divide transcrições longas em partes. */
+  detail?: SummaryDetail;
 }
+
+/** Tamanho máximo (em caracteres) de cada parte enviada ao modelo. */
+export const SUMMARY_CHUNK_CHARS = 12000;
 
 @Injectable()
 export class VideoService {
@@ -180,27 +187,52 @@ export class VideoService {
     options: VideoSummarizeOptions,
   ): Promise<string> {
     try {
-      const { providerId, modelId, thinking = 'off' } = options;
+      const { providerId, modelId, thinking = 'off', detail } = options;
 
-      const currentPrompt = `
+      // O resumo curto vai de uma vez; os detalhados resumem por partes para o
+      // modelo não comprimir uma aula longa em poucos parágrafos.
+      const chunks =
+        detail && detail !== 'brief'
+          ? splitText(transcription, SUMMARY_CHUNK_CHARS)
+          : [transcription];
+
+      const parts: string[] = [];
+
+      for (const [index, chunk] of chunks.entries()) {
+        const note = this.partNote(index, chunks.length);
+
+        parts.push(
+          await this.aiService.chat({
+            providerId,
+            modelId,
+            thinking,
+            message: `
       ${prompt}
-      ${transcription}
-      `;
+      ${note}${chunk}
+      `,
+          }),
+        );
+      }
 
-      const response = await this.aiService.chat({
-        providerId,
-        modelId,
-        thinking,
-        message: currentPrompt,
-      });
-
-      return response;
+      return parts.join('\n\n');
     } catch (error) {
       console.log(error);
       throw new Error('Falha ao gerar o resumo.', {
         cause: error,
       });
     }
+  }
+
+  private partNote(index: number, total: number): string {
+    if (total <= 1) {
+      return '';
+    }
+
+    const intro = `Esta é a parte ${index + 1} de ${total} de uma mesma aula. Resuma somente esta parte; as outras são resumidas separadamente.`;
+
+    return index === 0
+      ? `${intro}\n\n`
+      : `${intro} Não repita o título principal: comece direto pelas seções (##).\n\n`;
   }
 
   async deleteVideo(videoPath: string): Promise<void> {

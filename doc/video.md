@@ -21,7 +21,8 @@
 - Grava `nome + extensão` em UTF-8; a extensão padrão é `.md` e a pasta padrão é `TEMP_DOCS_DIR` (criada se não existir); devolve o caminho.
 
 ## Resumo
-- Monta o prompt (`SummarySpecialistPrompt`) seguido da transcrição e envia ao `AIService.chat`.
+- Monta o prompt seguido da transcrição e envia ao `AIService.chat`. O prompt depende do **nível de detalhe** (`buildSummaryPrompt`): `brief` (prompt original, resumo curto), `detailed` (padrão; preserva conceitos, explicações, comandos e exemplos) e `study` (material de consulta quase completo, com agrupamentos Conceitos-chave / Passo a passo / Comandos e exemplos / Pontos de atenção / Para revisar, só com o que existir na fonte). Os três mantêm as regras de fidelidade à fonte; muda só a seção "NÍVEL DE DETALHE".
+- Em `detailed` e `study`, transcrições com mais de 12000 caracteres são divididas em partes (`splitText`, cortando no fim de frases); cada parte é resumida em uma chamada (com a nota "parte i de n"; da 2ª em diante, sem repetir o título principal) e os resumos são juntados com linha em branco. `brief` sempre vai em uma chamada só.
 - `thinking` assume `off` se não informado.
 - Falha vira "Falha ao gerar o resumo".
 

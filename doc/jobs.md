@@ -29,7 +29,7 @@
 
 ## Endpoints
 - `GET jobs`, `GET jobs/types`, `GET jobs/:id`.
-- `POST jobs/video-to-transcript` (body `{ url, title?, category?, tags? }`) e `POST jobs/video-to-summary` (body `{ url, providerId, modelId, thinking, title?, category?, tags? }`): criam o job, enfileiram e respondem na hora `{ id, status }` (status `pending`). O acompanhamento é por polling em `GET jobs`/`GET jobs/:id`.
+- `POST jobs/video-to-transcript` (body `{ url, title?, category?, tags? }`) e `POST jobs/video-to-summary` (body `{ url, providerId, modelId, thinking, detail?, title?, category?, tags? }`; `detail` é `brief`, `detailed` (padrão) ou `study`, valor inválido vira `detailed`): criam o job, enfileiram e respondem na hora `{ id, status }` (status `pending`). O acompanhamento é por polling em `GET jobs`/`GET jobs/:id`.
 
 ## Título, categoria e tags opcionais (`DocumentHints`)
 - Na criação do job, `title`, `category` (lista de níveis) e `tags` (lista) são opcionais e vão para o documento gerado. O `Job` guarda em `documentHints` (não aparece no JSON do job).

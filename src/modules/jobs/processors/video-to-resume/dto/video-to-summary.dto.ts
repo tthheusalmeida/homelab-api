@@ -1,5 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { type AIProviderName } from 'src/modules/ai/ai.model';
+import {
+  SUMMARY_DETAILS,
+  type SummaryDetail,
+} from 'src/modules/ai/prompts/summary-specialist.prompt';
 
 export class VideoToSummaryDto {
   @ApiProperty({
@@ -22,6 +26,13 @@ export class VideoToSummaryDto {
     example: 'off',
   })
   thinking?: string;
+
+  @ApiPropertyOptional({
+    enum: SUMMARY_DETAILS,
+    example: 'detailed',
+    description: 'Nível de detalhe do resumo (padrão: detailed).',
+  })
+  detail?: SummaryDetail;
 
   @ApiPropertyOptional({ example: 'Práticas da Primeira Maneira' })
   title?: string;
