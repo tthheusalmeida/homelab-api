@@ -57,7 +57,11 @@ export class VideoService {
           // Libera o response atual porque ele não contém o vídeo.
           response.resume();
 
-          this.download(response.headers.location, fileName, destinationDir)
+          this.download(
+            new URL(response.headers.location, url).href,
+            fileName,
+            destinationDir,
+          )
             .then(resolve)
             .catch(reject);
 
